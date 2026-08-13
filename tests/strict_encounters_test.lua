@@ -353,6 +353,22 @@ eq(h.save.nuzlocke_started, true,
   "receiving any Ball permanently starts the Nuzlocke")
 game.save.inventory.FAST_BALL = nil
 
+local lockedMessage
+game.stack = {
+  push = function(_, screen) lockedMessage = screen end,
+}
+local lockedSettings = h.screens.Gen1RecompPlusNuzlockeSettings.new(game)
+eq(lockedSettings.opts.footer, "LOCKED  B:BACK",
+  "active-run settings clearly show that rules are locked")
+local strictBeforeLockAttempt = h.save.strict_encounters
+lockedSettings.opts.onChoose(lockedSettings.items[1], lockedSettings)
+eq(h.save.strict_encounters, strictBeforeLockAttempt,
+  "active-run settings cannot change a configured rule")
+eq(lockedMessage.pages[1][1], "Rules are locked",
+  "a locked rule attempt explains why it was refused")
+eq(lockedMessage.pages[1][2], "for this run!",
+  "the lock refusal applies to the complete run")
+
 -- Roaming slots are persistent encounters of their own. Their species may be
 -- randomized later, so identity comes from battle.roaming rather than a list.
 local catchHook = h.hooks["battle.catch_allowed"]
@@ -925,6 +941,9 @@ assert(loadfile(root .. "/main.lua"))()(reloadedMod)
 local reloadedGame = {
   save = game.save,
   data = game.data,
+  stack = {
+    push = function() end,
+  },
 }
 reloadedMod.game = reloadedGame
 reloaded:setMap("ROUTE_29")
@@ -933,6 +952,10 @@ allowed = reloadedCatch(function() return true end, {
   game = reloadedGame, battle = { wild = true }, species = "SENTRET",
 })
 eq(allowed, false, "failed route remains blocked after save reload")
+local reloadedSettings =
+  reloaded.screens.Gen1RecompPlusNuzlockeSettings.new(reloadedGame)
+eq(reloadedSettings.opts.footer, "LOCKED  B:BACK",
+  "rules remain locked after save reload")
 
 -- A caught route proves an older mod version already saw the player use a
 -- Ball. Upgrading must preserve that started run even if no Balls remain.

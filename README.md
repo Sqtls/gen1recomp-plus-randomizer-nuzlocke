@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.16.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.17.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -43,6 +43,7 @@ scaled, and a failed run ends with a complete run report.
 
 | Feature | What it does |
 | --- | --- |
+| Locked ruleset | Permanently locks every configured rule when the player first obtains a Ball. |
 | Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
 | Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy, using every species ever owned during the run. |
 | Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
@@ -77,7 +78,7 @@ The mod contains no ROM, game assets, or ROM-derived content.
 5. Launch Pokémon Gold and begin a new game.
 
 Professor Oak presents the complete ruleset during the new-game introduction.
-Settings can also be reviewed or changed later from:
+Settings can also be reviewed later from:
 
 ```text
 START → NUZLOCKE
@@ -85,8 +86,10 @@ START → NUZLOCKE
 
 ## Configuring a run
 
-Every configurable feature is available both during Oak's introduction and in
-the in-game Nuzlocke settings screen.
+Every configurable feature is available during Oak's introduction and from the
+in-game Nuzlocke settings screen until the run starts. Obtaining any Ball
+permanently locks the ruleset for that save. The screen remains available as a
+read-only summary of the active rules and current level cap.
 
 | Setting | Default | Options | Behaviour |
 | --- | :---: | --- | --- |
@@ -110,6 +113,10 @@ the in-game Nuzlocke settings screen.
 The run begins permanently when the player first owns **any item from the Ball
 pocket**. Encounters seen before that moment never consume or fail an area.
 This is a hard rule and cannot be disabled.
+
+At that same moment, every configured rule becomes read-only for the rest of
+the run. Saving, reloading, spending every Ball, or losing every Ball does not
+unlock the ruleset.
 
 Trainer battles, the catching tutorial, and the Bug-Catching Contest do not
 consume normal area encounters. Gold maps that share the same named landmark
@@ -342,7 +349,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.16.0 |
+| Current mod version | 0.17.0 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly
