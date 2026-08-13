@@ -46,26 +46,42 @@ function Permadeath.install(mod)
 
   mod.content.screens:register(GAME_OVER_SCREEN, {
     new = function(game)
-      local menu
-      menu = mod.ui.ListMenu.new(game, "NUZLOCKE OVER", {
-        { label = saveDeleted[game] and "RETURN TO TITLE" or "DELETE SAVE",
-          value = "title" },
-      }, {
-        footer = "NO LIVING POK\195\169MON\nREMAIN IN PARTY OR PC.",
-        onChoose = function()
+      local title = "NUZLOCKE FAILED"
+      local action = "RESTART GAME"
+      local screen = {
+        game = game,
+        isOpaque = true,
+        title = title,
+        action = action,
+      }
+
+      function screen:update()
+        if game.input:wasPressed("a") then
           if deleteActiveSave(game) then
             if game.returnToTitle then game:returnToTitle() end
           else
-            menu.footer = "SAVE DELETE FAILED.\nA:RETRY"
+            self.error = "SAVE DELETE FAILED"
           end
-        end,
-        -- ListMenu pops on B before invoking this callback. Put the terminal
-        -- screen straight back so an ended run cannot resume with no party.
-        onCancel = function()
-          mod.ui.push(game, GAME_OVER_SCREEN)
-        end,
-      })
-      return menu
+        end
+      end
+
+      local function drawCentered(text, y)
+        mod.ui.Font.draw(text, math.floor((160 - mod.ui.Font.width(text)) / 2), y)
+      end
+
+      function screen:draw()
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.rectangle("fill", 0, 0, 160, 144)
+        love.graphics.setColor(0, 0, 0, 1)
+        drawCentered(title, 48)
+        local rowWidth = 8 + mod.ui.Font.width(action)
+        local x = math.floor((160 - rowWidth) / 2)
+        mod.ui.Font.drawCode(mod.ui.Theme.cursor, x, 88)
+        mod.ui.Font.draw(action, x + 8, 88)
+        if self.error then drawCentered(self.error, 112) end
+      end
+
+      return screen
     end,
   })
 

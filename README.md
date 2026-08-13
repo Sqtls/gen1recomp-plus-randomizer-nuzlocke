@@ -32,10 +32,11 @@ is removed when its battle finishes. Revives are refused without being spent.
 If the whole party dies, the first living non-Egg Pokémon in PC box order is
 withdrawn before the blackout respawn; fainted boxed Pokémon and Eggs are
 skipped. If no eligible backup exists, the run ends on a non-dismissible
-`NUZLOCKE OVER` screen after the blackout respawn and the failed run's active
-save file is deleted. Empty-party saves produced by v0.3.0 are repaired into
-the same rescue-or-game-over state when loaded. Overworld poison faints follow
-the same rule.
+centered `NUZLOCKE FAILED` screen after the blackout respawn and the failed
+run's active save file is deleted. Its only action restarts at the title
+screen. Empty-party saves produced by v0.3.0 are repaired into the same
+rescue-or-game-over state when loaded. Overworld poison faints follow the same
+rule.
 
 ## Principles
 

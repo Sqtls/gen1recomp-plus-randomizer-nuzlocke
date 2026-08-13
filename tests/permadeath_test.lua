@@ -45,12 +45,16 @@ local dead = { species = "SENTRET", nickname = "SCOUT", level = 8, hp = 0 }
 local survivor = { species = "CYNDAQUIL", level = 9, hp = 12 }
 local deadMail = { message = "SCOUT'S MAIL" }
 local survivorMail = { message = "CYNDAQUIL'S MAIL" }
+local pressed = {}
 local game = {
   save = {
     party = { dead, survivor }, boxes = {}, inventory = { REVIVE = 2 },
     mail = { party = { deadMail, survivorMail }, box = {} },
   },
   data = { items = {}, pokemon = {} },
+  input = {
+    wasPressed = function(_, key) return pressed[key] == true end,
+  },
 }
 local saveDeletes = 0
 game.deleteActiveSave = function()
@@ -64,6 +68,14 @@ local function read(relative)
   file:close()
   return body
 end
+
+local drawn = {}
+love = {
+  graphics = {
+    setColor = function() end,
+    rectangle = function() end,
+  },
+}
 
 local mod = {
   path = root,
@@ -88,13 +100,16 @@ local mod = {
   },
   world = { current = function() return { mapId = "ROUTE_29" } end },
   ui = {
-    ListMenu = {
-      new = function(activeGame, title, items, opts)
-        return {
-          game = activeGame, title = title, items = items, opts = opts,
-        }
+    Font = {
+      width = function(text) return #text * 8 end,
+      draw = function(text, x, y)
+        drawn[#drawn + 1] = { text = text, x = x, y = y }
+      end,
+      drawCode = function(code, x, y)
+        drawn[#drawn + 1] = { code = code, x = x, y = y }
       end,
     },
+    Theme = { cursor = 0xed },
     insertBefore = function(items) return items end,
     insertStepAfter = function(steps) return steps end,
     push = function(activeGame, id)
@@ -290,20 +305,32 @@ eq(table.concat(terminalOrder, ","), "delete_save,respawn,game_over",
 
 local gameOverFactory = registeredScreens.Gen1RecompPlusNuzlockeGameOver
 eq(type(gameOverFactory), "table", "game-over screen is registered")
-local gameOverMenu = gameOverFactory.new(game)
-eq(gameOverMenu.title, "NUZLOCKE OVER",
-  "terminal screen clearly announces game over")
-eq(gameOverMenu.items[1].label, "RETURN TO TITLE",
-  "terminal screen confirms the failed run's save was deleted")
-local pushesBeforeCancel = #pushedScreens
-gameOverMenu.opts.onCancel()
-eq(#pushedScreens, pushesBeforeCancel + 1,
-  "B cannot dismiss the terminal screen back into the run")
+local gameOverScreen = gameOverFactory.new(game)
+eq(gameOverScreen.title, "NUZLOCKE FAILED",
+  "terminal screen clearly announces the failed run")
+eq(gameOverScreen.action, "RESTART GAME",
+  "terminal screen has one restart action")
+drawn = {}
+gameOverScreen:draw()
+eq(drawn[1].text, "NUZLOCKE FAILED",
+  "failed title is drawn")
+eq(drawn[1].x, 20,
+  "failed title is horizontally centered")
+eq(drawn[3].text, "RESTART GAME",
+  "restart is the only drawn action")
+eq(drawn[2].x, 28,
+  "restart row including its cursor is horizontally centered")
 local returnedToTitle = false
 game.returnToTitle = function() returnedToTitle = true end
-gameOverMenu.opts.onChoose(gameOverMenu.items[1])
+pressed = { b = true }
+gameOverScreen:update()
+eq(returnedToTitle, false,
+  "B cannot dismiss the failed-run screen")
+pressed = { a = true }
+gameOverScreen:update()
 eq(returnedToTitle, true,
-  "terminal screen can return to the title")
+  "restart returns to the title after save deletion")
+pressed = {}
 
 local strandedBackup = { species = "PIDGEY", hp = 15 }
 game.save.party = {}
