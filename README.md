@@ -18,6 +18,8 @@ The first feature is strict first-encounter enforcement.
 - Trainer battles, the catching tutorial, and the Bug-Catching Contest are
   exempt.
 - Gold maps sharing the same landmark share one encounter allocation.
+- The Nuzlocke starts permanently when the player first owns any item from the
+  Ball pocket; wild encounters before that moment never consume an area.
 - Blocked balls show the recorded encounter outcome and return before the ball
   or turn is consumed, including on Gold v0.1.80.
 

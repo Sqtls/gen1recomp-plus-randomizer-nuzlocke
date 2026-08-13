@@ -147,9 +147,13 @@ eq(settings.items[2].right, "SKIP", "active settings show duplicate policy")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.
-game.save = { party = {}, boxes = {} }
+game.save = { party = {}, boxes = {}, inventory = {} }
 game.data = {
-  items = { POKE_BALL = { pocket = "BALL" } },
+  items = {
+    POTION = { pocket = "ITEM" },
+    POKE_BALL = { pocket = "BALL" },
+    FAST_BALL = { pocket = "BALL" },
+  },
   gen2Maps = {
     ROUTE_29 = { landmark = 16 },
     ROUTE_29_GATE = { landmark = 16 },
@@ -172,6 +176,25 @@ game.data = {
   },
 }
 mod.game = game
+local beforeBalls = { wild = true, enemy = { species = "SENTRET" } }
+h:emit("battle.started", {
+  battle = beforeBalls, kind = "wild", species = "SENTRET",
+})
+h:emit("battle.ended", { battle = beforeBalls, result = "run" })
+eq(h.save.encounter_areas and h.save.encounter_areas["LANDMARK:16"], nil,
+  "encounters before receiving any Ball do not count")
+local stepHook = h.hooks["input.step"]
+eq(type(stepHook), "function", "Ball acquisition watcher is registered")
+game.save.inventory.POTION = 1
+stepHook(function() end, game, 1 / 60)
+eq(h.save.nuzlocke_started, nil,
+  "receiving a non-Ball item does not start the Nuzlocke")
+game.save.inventory.FAST_BALL = 1
+stepHook(function() end, game, 1 / 60)
+eq(h.save.nuzlocke_started, true,
+  "receiving any Ball permanently starts the Nuzlocke")
+game.save.inventory.FAST_BALL = nil
+
 local first = { wild = true, enemy = { species = "SENTRET" } }
 h:emit("battle.started", { battle = first, kind = "wild", species = "SENTRET" })
 eq(h.save.encounter_areas["LANDMARK:16"].status, "active",
@@ -398,5 +421,29 @@ allowed = reloadedCatch(function() return true end, {
   game = reloadedGame, battle = { wild = true }, species = "SENTRET",
 })
 eq(allowed, false, "failed route remains blocked after save reload")
+
+-- A caught route proves an older mod version already saw the player use a
+-- Ball. Upgrading must preserve that started run even if no Balls remain.
+local upgradedMod, upgraded = newMod({
+  strict_encounters = true,
+  encounter_areas = {
+    ["LANDMARK:16"] = { status = "caught", species = "SENTRET" },
+  },
+})
+assert(loadfile(root .. "/main.lua"))()(upgradedMod)
+local upgradedGame = {
+  save = { party = {}, boxes = {}, inventory = {} },
+  data = game.data,
+}
+upgradedMod.game = upgradedGame
+upgraded:setMap("ROUTE_30")
+local upgradedBattle = { wild = true, enemy = { species = "HOOTHOOT" } }
+upgraded:emit("battle.started", {
+  battle = upgradedBattle, kind = "wild", species = "HOOTHOOT",
+})
+eq(upgraded.save.nuzlocke_started, true,
+  "existing caught route migrates to a permanently started run")
+eq(upgraded.save.encounter_areas["LANDMARK:17"].status, "active",
+  "upgraded run stays active even when no Balls remain")
 
 print(("strict encounters: %d checks passed"):format(checks))

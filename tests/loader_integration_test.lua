@@ -30,17 +30,22 @@ assert(hooks:depth("battle.catch_allowed") == 1,
   "loaded mod must install strict capture enforcement")
 assert(hooks:depth("ui.start_menu.items") == 1,
   "loaded mod must expose in-game settings")
+assert(hooks:depth("input.step") == 1,
+  "loaded mod must watch for the first Ball acquisition")
 
 local game = {
   data = {
     gen2Maps = { ROUTE_29 = { landmark = 16 } },
-    items = { POKE_BALL = { pocket = "BALL" } },
+    items = {
+      POKE_BALL = { pocket = "BALL" },
+      FAST_BALL = { pocket = "BALL" },
+    },
     pokemon = {
       SENTRET = { evolutions = {} },
       HOOTHOOT = { evolutions = {} },
     },
   },
-  save = { party = {}, boxes = {} },
+  save = { party = {}, boxes = {}, inventory = {} },
   world = { map = { id = "ROUTE_29" }, player = {} },
 }
 run.loader.game = game
@@ -51,6 +56,23 @@ local menu = run.loader.hooks:call("ui.start_menu.items",
 assert(#menu == 3 and menu[2].label == "NUZLOCKE",
   "loaded mod must add START -> NUZLOCKE before SAVE")
 
+local free = { wild = true, enemy = { species = "SENTRET" } }
+run.loader.events:emit("battle.started", {
+  battle = free, kind = "wild", species = "SENTRET",
+})
+run.loader.events:emit("battle.ended", { battle = free, result = "run" })
+local bucket = run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke
+assert(not (bucket and bucket.encounter_areas
+    and bucket.encounter_areas["LANDMARK:16"]),
+  "encounter before receiving any Ball must remain free")
+
+game.save.inventory.FAST_BALL = 1
+run.loader.hooks:call("input.step", function() end, game, 1 / 60)
+bucket = run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke
+assert(bucket and bucket.nuzlocke_started == true,
+  "receiving any Ball must permanently start the Nuzlocke")
+game.save.inventory.FAST_BALL = nil
+
 local first = { wild = true, enemy = { species = "SENTRET" } }
 run.loader.events:emit("battle.started", {
   battle = first, kind = "wild", species = "SENTRET",
@@ -59,8 +81,7 @@ run.loader.events:emit("pokemon.caught", {
   battle = first, game = game, species = "SENTRET",
 })
 
-local areas = run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke
-  and run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke.encounter_areas
+local areas = bucket and bucket.encounter_areas
 assert(areas and areas["LANDMARK:16"]
     and areas["LANDMARK:16"].status == "caught",
   "first catch must consume the landmark encounter")
@@ -104,4 +125,4 @@ assert(screen.phase == "resolving",
   "blocked ball message must enter the normal battle message phase")
 
 run.release()
-print("production loader integration: 10 checks passed")
+print("production loader integration: 13 checks passed")

@@ -84,6 +84,34 @@ function StrictEncounters.install(mod)
     return setting(mod, "strict_encounters", true) == true
   end
 
+  local function started(game)
+    if mod.save:get("nuzlocke_started") == true then return true end
+    local areas = mod.save:get("encounter_areas")
+    if type(areas) == "table" then
+      for _, area in pairs(areas) do
+        if type(area) == "table" and area.status == "caught" then
+          mod.save:set("nuzlocke_started", true)
+          return true
+        end
+      end
+    end
+    local save = game and game.save
+    local items = game and game.data and game.data.items
+    for itemId, count in pairs(save and save.inventory or {}) do
+      if type(count) == "number" and count > 0 and items and items[itemId]
+          and items[itemId].pocket == "BALL" then
+        mod.save:set("nuzlocke_started", true)
+        return true
+      end
+    end
+    return false
+  end
+
+  mod.hooks:wrap("input.step", function(next, game, dt)
+    started(game)
+    return next(game, dt)
+  end, 1000)
+
   local function canonicalArea(game)
     local current = mod.world:current()
     local mapId = current and current.mapId or "UNKNOWN"
@@ -167,7 +195,8 @@ function StrictEncounters.install(mod)
   mod.events:on("battle.started", function(ev)
     local battle = ev and ev.battle
     local game = mod.game
-    if not enabled(game) or not eligibleBattle(battle, game, ev) then return end
+    if not enabled(game) or not started(game)
+        or not eligibleBattle(battle, game, ev) then return end
 
     activeBattle = battle
     local key, mapId = canonicalArea(game)
