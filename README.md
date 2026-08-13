@@ -5,7 +5,19 @@ in gen1recomp++, built one independently validated feature at a time.
 
 ## Status
 
-Foundation only. This version intentionally changes no gameplay.
+The first feature is strict first-encounter enforcement.
+
+- Oak configures `1ST ENCOUNTER` and the `SKIP`/`LOSE` duplicate-family rule
+  for each new run.
+- `START` → `NUZLOCKE` changes those settings for the active save.
+- The first eligible wild encounter reserves the whole named area. Catching it
+  seals the area as caught; knocking it out, running, losing, or letting it flee
+  permanently fails the area.
+- Failed ball throws do not consume another encounter while the same battle is
+  still active.
+- Trainer battles, the catching tutorial, and the Bug-Catching Contest are
+  exempt.
+- Gold maps sharing the same landmark share one encounter allocation.
 
 ## Principles
 
