@@ -35,7 +35,8 @@ local function roles(pokemon)
   local parents = {}
   for _, definition in pairs(pokemon or {}) do
     for _, evolution in ipairs(definition.evolutions or {}) do
-      parents[evolution.species] = true
+      local target = evolution.into or evolution.species
+      if target then parents[target] = true end
     end
   end
   local result = {}
