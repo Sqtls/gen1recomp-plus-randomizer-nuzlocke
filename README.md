@@ -1,140 +1,343 @@
-# Gen1Recomp Plus Randomizer Nuzlocke
+<div align="center">
 
-An all-in-one Pokémon Gold randomizer and Nuzlocke mod for the Gen 2 support
-in gen1recomp++, built one independently validated feature at a time.
+# Gen1Recomp++ Randomizer Nuzlocke
 
-## Status
+### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
-Strict first encounters, the dupes and shiny clauses, party permadeath,
-failed-run reports, mandatory nicknames, level caps, level scaling, enforced
-Set battle mode, static and gift encounter policies, and the optional
-no-battle-items challenge are implemented.
+![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.13.0-4c8bf5?style=flat-square)
+![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
+![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
-- Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE`/`OFF` duplicate-family
-  rule, and the shiny clause for each new run.
-- `START` → `NUZLOCKE` changes those settings for the active save.
-- The first eligible wild encounter reserves the whole named area. Catching it
-  seals the area as caught; knocking it out, running, losing, or letting it flee
-  permanently fails the area.
-- Failed ball throws do not consume another encounter while the same battle is
-  still active.
-- `DUPES: SKIP` refuses any previously caught evolution-family member without
-  consuming the area, `LOSE` immediately fails the area, and `OFF` allows the
-  duplicate to become the area's ordinary encounter.
-- Scripted static encounters are configurable as `AREA`, `BONUS`, or `FORBID`.
-  `AREA` uses the surrounding area's encounter, `BONUS` bypasses and preserves
-  that area, and `FORBID` refuses the catch entirely. This policy takes priority
-  over the shiny clause, including for the Red Gyarados. Detection follows
-  Gold's scripted encounter origin rather than a species list, so randomized
-  static species retain the selected policy.
-- Gifts are configurable as `BONUS` or `AREA`, defaulting to `BONUS`. `AREA`
-  consumes the landmark where the Pokémon or Egg is received and refuses a
-  gift if that landmark was already used. Blocked scripted gifts abort before
-  their claimed flag is set, so they remain retryable. This covers starters,
-  scripted gifts such as Eevee, Togepi's Egg, and Game Corner Pokémon. Eggs
-  count where received rather than where hatched; in-game and link trades are
-  excluded.
-- Trainer battles, the catching tutorial, and the Bug-Catching Contest are
-  exempt.
-- Gold maps sharing the same landmark share one encounter allocation.
-- The Nuzlocke starts permanently when the player first owns any item from the
-  Ball pocket; wild encounters before that moment never consume an area.
-- Blocked balls show the recorded encounter outcome and return before the ball
-  or turn is consumed, including on Gold v0.1.80.
-- With `SHINY CLAUSE` enabled, a shiny bypasses used and failed route limits as
-  well as both dupes modes. Catching or leaving it never consumes, repairs, or
-  replaces the area's normal encounter record.
-- With `MANDATORY NAMES` enabled, every wild catch, starter, scripted gift,
-  hatched Egg, and Bug-Catching Contest reward must receive a nonblank nickname
-  different from its species name. Pre-nicknamed in-game trades already satisfy
-  the rule. Oak and `START` → `NUZLOCKE` both expose the setting, which defaults
-  to ON. Rejected blank and species-default entries show an inline explanation
-  and keep the naming screen open.
-- With `LEVEL CAPS` enabled, battle EXP, Rare Candies, and Day Care growth stop
-  at the current major-challenge cap. The settings screen displays that cap.
-  Progressing past a milestone immediately permits growth to the next cap.
-- Johto caps are Falkner 9, Bugsy 16, Whitney 20, Morty 25, Chuck 30, Pryce
-  31, Jasmine 35, and Clair 40. Pryce is deliberately checked before Jasmine
-  so the cap never falls from 35 back to 31 when those gyms are done out of
-  order.
-- The Elite Four and Champion cap is 50. With `LEVEL SCALING` off, Kanto stays
-  at 50 until seven Kanto badges, rises to 58 for Blue, then 81 for Red.
-- With `LEVEL SCALING` enabled, wild Pokémon and ordinary trainer roster
-  members scale around 80% of the highest-level non-Egg Pokémon currently in
-  the party, with a random variance of two levels in either direction. Vanilla
-  levels are never reduced and scaling never raises an addition past the active
-  cap. Scaled Pokémon regenerate the latest four natural moves available at
-  their new level; explicitly authored trainer movesets remain unchanged.
-  Boxed Pokémon are ignored, and Repels evaluate the final scaled wild level.
-- Kanto leaders use ace targets of 52, 55, 58, 61, 64, 67, and 70 based on the
-  number of Kanto badges already owned, so they remain open-order. Each roster
-  keeps its original level spread. Blue's target is 75 and Red's is 81; player
-  caps advance to the same targets. Defeating Red removes the cap.
-- With `SET MODE` enabled, Gold's Battle Style is forced to `SET`, the OPTION
-  screen cannot select `SHIFT`, and defeating an opposing Pokémon never offers
-  a free switch before the replacement appears. Disabling the rule restores
-  normal `SHIFT`/`SET` control without changing the current selection.
-- With `NO BATTLE ITEMS` enabled, manually selected items are refused before
-  consumption or turn use. Poké Balls remain usable, held-item effects still
-  trigger normally, and item use outside battle is unchanged. This optional
-  challenge defaults to OFF and is configurable through Oak and `NUZLOCKE`.
+</div>
 
-Gold v0.1.80 is handled directly for starter/scripted-gift and wild-catch
-nickname flows because that build predates the public nickname hook call sites.
+Turn Pokémon Gold into a configurable Nuzlocke where the rules are enforced by
+the game instead of being left to an honour system. Encounters are tracked by
+location, fainted Pokémon are permanently removed, levels are capped and
+scaled, and a failed run ends with a complete run report.
 
-Gold v0.1.80 lacks public hooks at several required enforcement boundaries, so
-this version uses `engine_internals` for Gold's ball use, battle finish, and
-overworld poison-faint paths.
+> [!IMPORTANT]
+> This mod is **Pokémon Gold only** and targets the Gen 2 support in
+> [gen1recomp++](https://github.com/bryanthaboi/gen1recomp). It does not support
+> Pokémon Red, Blue, or Yellow.
 
-When `PERMADEATH` is enabled, a party Pokémon that faints after the run starts
-is removed when its battle finishes. Revives are refused without being spent.
-If the whole party dies, the first living non-Egg Pokémon in PC box order is
-withdrawn before the blackout respawn; fainted boxed Pokémon and Eggs are
-skipped. If no boxed backup exists, the first deposited Day-Care Pokémon is
-withdrawn for free with its accrued growth; a waiting Egg alone cannot rescue
-the run. If no eligible backup exists, the run ends on a non-dismissible
-centered `NUZLOCKE FAILED` screen after the blackout respawn and the failed
-run's active save file is deleted. Its only action restarts at the title
-screen. Empty-party saves produced by v0.3.0 are repaired into the same
-rescue-or-game-over state when loaded. Overworld poison faints follow the same
-rule.
+> [!NOTE]
+> The Nuzlocke and level-scaling foundation is implemented now. Pokémon, item,
+> trainer, and encounter randomization are planned features and are **not yet
+> included** in the current release.
 
-The failed-run screen has three pages navigated with Left/Right:
+## Contents
 
-- `SUMMARY` shows all Johto/Kanto badges, play time, catches, failed
-  encounters, and known deaths.
-- `ENCOUNTERS` lists successful catches and strict encounter failures with
-  their Gold landmark and failure reason.
-- `MEMORIAL` lists each lost Pokémon's nickname, level, and death location.
+- [Highlights](#highlights)
+- [Installation](#installation)
+- [Configuring a run](#configuring-a-run)
+- [Encounter rules](#encounter-rules)
+- [Permadeath and failed runs](#permadeath-and-failed-runs)
+- [Level caps](#level-caps)
+- [Level scaling](#level-scaling)
+- [Additional challenge rules](#additional-challenge-rules)
+- [Compatibility](#compatibility)
+- [Development](#development)
 
-Up/Down scrolls longer histories. `RESTART GAME` remains the only action and B
-cannot dismiss the report. New runs keep a complete journal in the save;
-upgraded active runs clearly mark history from before v0.4.0 as unrecorded.
+## Highlights
 
-## Principles
+| Feature | What it does |
+| --- | --- |
+| Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
+| Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy. |
+| Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
+| Permadeath | Removes fainted party Pokémon and refuses Revives. |
+| Reserve recovery | After a wipe, automatically recovers one Pokémon from the PC or Day Care before ending the run. |
+| Mandatory nicknames | Requires a real custom nickname for catches, starters, gifts, and hatched Eggs. |
+| Level caps | Stops EXP, Rare Candies, and Day-Care growth at the next major challenge. |
+| Dynamic scaling | Keeps underlevelled wild Pokémon, trainers, and Kanto leaders relevant to the current party. |
+| Static and gift policies | Controls whether special encounters consume an area, count as a bonus, or are forbidden. |
+| Set mode | Can permanently enforce `SET` battle style. |
+| No battle items | Can forbid every manually used battle item except Poké Balls. |
+| Run reports | Records catches, encounter failures, deaths, badges, and play time for the failed-run screen. |
 
-- Gold only; no Gen 1 compatibility layer.
-- Each gameplay feature is implemented and validated independently.
-- Rules are strictly enforced by the mod rather than relying on the player.
-- Existing behavior stays unchanged unless an enabled feature requires it.
+## Installation
+
+### Requirements
+
+- A current gen1recomp++ build with Pokémon Gold support.
+- A legally obtained Pokémon Gold ROM supplied to gen1recomp++.
+- The packaged mod `.zip`.
+
+The mod contains no ROM, game assets, or ROM-derived content.
+
+### Install the mod
+
+1. Open the gen1recomp++ launcher.
+2. Open the **Mods** tab.
+3. Choose **Import mod .zip**, or drag the mod archive onto the launcher.
+4. Enable **Gen1Recomp++ Randomizer Nuzlocke**.
+5. Launch Pokémon Gold and begin a new game.
+
+Professor Oak presents the complete ruleset during the new-game introduction.
+Settings can also be reviewed or changed later from:
+
+```text
+START → NUZLOCKE
+```
+
+## Configuring a run
+
+Every configurable feature is available both during Oak's introduction and in
+the in-game Nuzlocke settings screen.
+
+| Setting | Default | Options | Behaviour |
+| --- | :---: | --- | --- |
+| `1ST ENCOUNTER` | `ON` | `ON` / `OFF` | Enforces one encounter per named area. |
+| `DUPES` | `SKIP` | `SKIP` / `LOSE` / `OFF` | Chooses how previously caught evolution families affect a new area. |
+| `SHINY CLAUSE` | `ON` | `ON` / `OFF` | Allows shiny Pokémon to bypass encounter limits. |
+| `PERMADEATH` | `ON` | `ON` / `OFF` | Permanently removes Pokémon that faint. |
+| `MANDATORY NAMES` | `ON` | `ON` / `OFF` | Requires every obtained Pokémon to have a custom nickname. |
+| `LEVEL CAPS` | `ON` | `ON` / `OFF` | Prevents the party from levelling beyond the active challenge cap. |
+| `LEVEL SCALING` | `ON` | `ON` / `OFF` | Scales weaker wild Pokémon, trainers, and Kanto leaders. |
+| `SET MODE` | `ON` | `ON` / `OFF` | Locks Battle Style to `SET`. |
+| `NO BATTLE ITEMS` | `OFF` | `OFF` / `ON` | Forbids non-Ball items during battle. |
+| `STATIC` | `AREA` | `AREA` / `BONUS` / `FORBID` | Controls scripted static encounters. |
+| `GIFTS` | `BONUS` | `BONUS` / `AREA` | Controls gifted Pokémon and Eggs. |
+
+## Encounter rules
+
+### When the Nuzlocke begins
+
+The run begins permanently when the player first owns **any item from the Ball
+pocket**. Encounters seen before that moment never consume or fail an area.
+This is a hard rule and cannot be disabled.
+
+Trainer battles, the catching tutorial, and the Bug-Catching Contest do not
+consume normal area encounters. Gold maps that share the same named landmark
+also share one encounter allocation.
+
+### First encounters
+
+The first eligible wild encounter reserves its named area immediately.
+
+| Encounter outcome | Area result |
+| --- | --- |
+| Pokémon caught | Area is permanently marked as caught. |
+| Pokémon knocked out | Area is permanently failed. |
+| Player runs | Area is permanently failed. |
+| Wild Pokémon flees | Area is permanently failed. |
+| Player loses the battle | Area is permanently failed. |
+| Ball misses during the active encounter | The encounter remains active; no second allocation is consumed. |
+
+Once an area is used, the game refuses further Poké Balls **before** spending
+the Ball or the player's turn. The refusal identifies the Pokémon and whether
+the area was caught or failed.
+
+### Dupes clause
+
+Duplicate detection covers the entire evolutionary family. Catching a Pidgey,
+for example, also treats Pidgeotto and Pidgeot as duplicates.
+
+| Policy | Result when the encounter is a duplicate |
+| --- | --- |
+| `SKIP` | The encounter is ignored and the area remains available for a new species. |
+| `LOSE` | The encounter immediately fails the area. |
+| `OFF` | The duplicate becomes the area's normal encounter. |
+
+### Shiny clause
+
+With `SHINY CLAUSE` enabled, a shiny Pokémon bypasses caught areas, failed
+areas, and every dupes policy. Catching, defeating, or leaving the shiny never
+consumes, repairs, or replaces the area's ordinary encounter record.
+
+The static encounter policy takes priority over the shiny clause. A forbidden
+static encounter remains forbidden even when shiny.
+
+### Static encounters
+
+This policy applies to scripted encounters such as Sudowoodo, the Red
+Gyarados, Snorlax, and legendary Pokémon. Detection follows the encounter's
+scripted origin rather than a species list, so future randomization will not
+break the rule.
+
+| Policy | Behaviour |
+| --- | --- |
+| `AREA` | Uses the surrounding area's encounter allocation. |
+| `BONUS` | Can be caught separately and leaves the area's normal allocation unchanged. |
+| `FORBID` | Cannot be caught. |
+
+### Gifts and Eggs
+
+Gift policy covers starters, Eevee, Shuckie, Togepi's Egg, Game Corner
+Pokémon, and other scripted gifts.
+
+| Policy | Behaviour |
+| --- | --- |
+| `BONUS` | The gift is separate from normal encounters. |
+| `AREA` | The gift consumes the landmark where it is received and is refused when that landmark is already used. |
+
+Blocked gifts remain retryable: event flags, coins, and other resources are not
+consumed. Failed or full-party grants do not reserve the area. Eggs count where
+they are received, not where they hatch. In-game and link trades are excluded.
+
+## Permadeath and failed runs
+
+When `PERMADEATH` is enabled, a party Pokémon that faints after the run begins
+is removed when the battle finishes. The same rule applies to overworld poison
+faints. Revives are refused without being consumed.
+
+### Party wipe recovery
+
+The mod checks every owned reserve before ending the run:
+
+1. Remove every fainted party member.
+2. Withdraw the first living, non-Egg Pokémon in PC box order.
+3. If no boxed backup exists, withdraw the first deposited Day-Care Pokémon.
+4. If no usable reserve exists, end the run and delete its active save file.
+
+Emergency Day-Care withdrawal is free and applies the Pokémon's accrued
+experience and moves normally. A waiting Day-Care Egg by itself cannot rescue
+the run.
+
+### Failed-run report
+
+A terminal wipe opens a non-dismissible `NUZLOCKE FAILED` screen. Its only
+action is `RESTART GAME`; B cannot return to the deleted save.
+
+| Page | Recorded information |
+| --- | --- |
+| `SUMMARY` | Johto and Kanto badges, play time, catches, failed encounters, and known deaths. |
+| `ENCOUNTERS` | Successful catches and strict encounter failures, including landmark and failure reason. |
+| `MEMORIAL` | Every lost Pokémon's nickname, level, and death location. |
+
+Use Left/Right to change pages and Up/Down to scroll longer histories. Upgraded
+runs clearly mark history from before journalling support as unrecorded.
+
+## Level caps
+
+With `LEVEL CAPS` enabled, battle EXP, Rare Candies, and Day-Care growth stop
+at the current major-challenge cap. Beating the relevant challenge immediately
+unlocks the next cap. The active value is always visible in the Nuzlocke
+settings screen.
+
+### Johto
+
+| Next challenge | Level cap | Next challenge | Level cap |
+| --- | :---: | --- | :---: |
+| Falkner | 9 | Chuck | 30 |
+| Bugsy | 16 | Pryce | 31 |
+| Whitney | 20 | Jasmine | 35 |
+| Morty | 25 | Clair | 40 |
+| Elite Four / Champion | 50 |  |  |
+
+Pryce is checked before Jasmine so completing those Gyms out of their listed
+badge order can never reduce an already unlocked cap.
+
+### Kanto and Red
+
+With level scaling disabled, Kanto keeps a level 50 cap until seven Kanto
+badges, rises to 58 for Blue, and then rises to 81 for Red.
+
+With level scaling enabled, Kanto progresses by badge count:
+
+| Kanto badges | Next leader's ace / player cap |
+| :---: | :---: |
+| 0 | 52 |
+| 1 | 55 |
+| 2 | 58 |
+| 3 | 61 |
+| 4 | 64 |
+| 5 | 67 |
+| 6 | 70 |
+| 7 (Blue) | 75 |
+| 8 (Red) | 81 |
+
+Defeating Red removes the level cap entirely.
+
+## Level scaling
+
+Scaling is based only on the highest-level non-Egg Pokémon currently in the
+party. Boxed and Day-Care Pokémon are ignored.
+
+For ordinary wild Pokémon and trainers, the target is:
+
+```text
+floor(highest party level × 80%) + random variance from -2 to +2
+```
+
+The final level is never lower than the vanilla level and never higher than
+the active level cap. This means appropriately levelled opponents remain
+unchanged while badly underlevelled opponents catch up.
+
+- Scaled Pokémon regenerate the latest four natural level-up moves available
+  at their new level.
+- Explicitly authored trainer movesets are preserved.
+- Repels evaluate the Pokémon's final scaled level, not its old vanilla level.
+- Kanto leaders keep their original team-wide level spread while their ace is
+  raised to the current Kanto target.
+- Blue targets level 75 and Red targets level 81.
+
+## Additional challenge rules
+
+### Mandatory nicknames
+
+Every wild catch, starter, scripted gift, hatched Egg, and Bug-Catching Contest
+reward must receive a nonblank nickname different from its species name. Blank
+or default names show an explanation and keep the naming screen open.
+Pre-nicknamed in-game trades already satisfy the rule.
+
+### Set mode
+
+When enabled, Gold's Battle Style is forced to `SET`. The Options screen cannot
+select `SHIFT`, and defeating an opponent never offers a free switch before
+their replacement enters battle. Disabling the rule restores normal control
+without changing the current selection.
+
+### No battle items
+
+When enabled, manually selected battle items are refused before consuming the
+item or the player's turn.
+
+- Poké Balls remain usable.
+- Held-item effects still work normally.
+- Items remain usable outside battle.
+
+## Compatibility
+
+| Item | Support |
+| --- | --- |
+| Pokémon Gold | Supported |
+| Pokémon Silver / Crystal | Not currently supported |
+| Pokémon Red / Blue / Yellow | Not supported |
+| gen1recomp++ Mod API | API 2 |
+| Current mod version | 0.13.0 |
+
+Gold v0.1.80 predates several public enforcement hooks used by this project.
+The mod therefore declares the `engine_internals` permission and directly
+supports the required Gold nickname, Ball-use, battle-finish, and poison-faint
+paths.
+
+## Project principles
+
+- Build and validate one gameplay feature at a time.
+- Enforce rules in code instead of relying on the player.
+- Preserve vanilla behaviour unless an enabled rule requires a change.
+- Keep the implementation Gold-specific, direct, and maintainable.
+- Add regression coverage for every rule and discovered edge case.
 
 ## Development
 
-From the gen1recomp++ repository root:
+Run validation from the gen1recomp++ repository root with this repository next
+to it:
 
 ```sh
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/strict_encounters_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/permadeath_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/run_report_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/mandatory_nicknames_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/gift_encounters_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_caps_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_scaling_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/forced_set_mode_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/no_battle_items_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
-luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
-python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture
-python3 tools/modkit.py gen2check ../gen1recomp-plus-randomizer-nuzlocke --strict
+for test_file in ../gen1recomp-plus-randomizer-nuzlocke/tests/*_test.lua; do
+  luajit "$test_file"
+done
+
+python3 tools/modkit.py validate \
+  ../gen1recomp-plus-randomizer-nuzlocke --base fixture
+python3 tools/modkit.py gen2check \
+  ../gen1recomp-plus-randomizer-nuzlocke --strict
 python3 tools/modkit.py lint ../gen1recomp-plus-randomizer-nuzlocke
 ```
+
+## License
+
+Released under the [MIT License](LICENSE).
