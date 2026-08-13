@@ -33,6 +33,8 @@ local files = {
     read("features/gift_randomizer.lua"),
   ["mods/strict/features/static_randomizer.lua"] =
     read("features/static_randomizer.lua"),
+  ["mods/strict/features/trainer_randomizer.lua"] =
+    read("features/trainer_randomizer.lua"),
   ["mods/strict/features/starter_randomizer.lua"] =
     read("features/starter_randomizer.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
@@ -62,8 +64,8 @@ assert(hooks:depth("pokemon.nickname") == 1,
   "loaded mod must require names for catches and scripted gifts")
 assert(hooks:depth("exp.gain") == 1,
   "loaded mod must enforce battle EXP level caps")
-assert(hooks:depth("trainer.party") == 2,
-  "loaded mod must scale trainers and map the rival starter line")
+assert(hooks:depth("trainer.party") == 3,
+  "loaded mod must randomize and scale trainers and map the rival starter line")
 assert(hooks:depth("ui.options.rows") == 1,
   "loaded mod must lock Gold's Battle Style option")
 assert(hooks:depth("script.command") == 3,
@@ -250,6 +252,19 @@ assert(not (bucket and bucket.encounter_areas
 
 bucket = bucket or {}
 run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke = bucket
+bucket.trainer_randomizer = "chaos"
+bucket.trainer_legendaries = "exclude"
+bucket.trainer_bosses = "include"
+bucket.randomizer_seed = 123
+local randomizedTrainer = run.loader.hooks:call("trainer.party",
+  function(_, _, party) return party end, "YOUNGSTER", "YOUNGSTER1",
+  { { species = "HOOTHOOT", level = 3, moves = {},
+      dvs = { attack = 9, defense = 8, speed = 8, special = 8 } } })
+assert(randomizedTrainer[1].species ~= "HOOTHOOT"
+    and randomizedTrainer[1].level == 9,
+  "production trainer chain must randomize after applying level scaling")
+bucket.trainer_randomizer = "off"
+
 bucket.wild_randomizer = "chaos"
 bucket.wild_legendaries = "exclude"
 bucket.randomizer_seed = 123
@@ -566,4 +581,4 @@ assert(#game.save.party == 1 and game.save.party[1] == backup,
   "completion must preserve the surviving final party")
 
 run.release()
-print("production loader integration: 43 checks passed")
+print("production loader integration: 44 checks passed")

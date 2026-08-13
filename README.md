@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.22.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.23.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -22,8 +22,8 @@ scaled, and a failed run ends with a complete run report.
 > Pokémon Red, Blue, or Yellow.
 
 > [!NOTE]
-> Wild, static, starter, and gift Pokémon randomization are implemented now.
-> Roaming, trainer, item, move, ability, and evolution randomizers are planned
+> Wild, static, starter, gift, and trainer Pokémon randomization are implemented
+> now. Roaming, item, move, ability, and evolution randomizers are planned
 > as focused follow-up features and are **not yet included** in the current
 > release.
 
@@ -36,6 +36,7 @@ scaled, and a failed run ends with a complete run report.
 - [Static randomization](#static-randomization)
 - [Starter randomization](#starter-randomization)
 - [Gift randomization](#gift-randomization)
+- [Trainer randomization](#trainer-randomization)
 - [Encounter rules](#encounter-rules)
 - [Permadeath and run endings](#permadeath-and-run-endings)
 - [Level caps](#level-caps)
@@ -53,6 +54,7 @@ scaled, and a failed run ends with a complete run report.
 | Static randomizer | Replaces scripted static battles while optionally guaranteeing legendary-to-legendary mapping. |
 | Starter randomizer | Generates three unique starter choices and keeps the rival's starter line synchronized. |
 | Gift randomizer | Replaces scripted gifts, Togepi's Egg, Game Corner Pokémon, and Shuckie while preserving their event behavior. |
+| Trainer randomizer | Replaces trainer parties deterministically while preserving party size, final levels, items, and rival starter continuity. |
 | Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
 | Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy, using every species ever owned during the run. |
 | Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
@@ -123,6 +125,9 @@ read-only summary of the active rules and current level cap.
 | `STARTER LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether a starter may be legendary or mythical. |
 | `GIFT MONS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls gifted Pokémon and scripted Egg species randomization. |
 | `GIFT LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether non-Egg gifts may become legendary or mythical. |
+| `TRAINERS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls trainer party species randomization. |
+| `TRAINER LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether trainer slots may become legendary or mythical. |
+| `BOSSES` | `INCLUDE` | `INCLUDE` / `EXCLUDE` | Controls whether major boss teams are randomized. |
 | `SEED` | Generated | Read-only | Shows the stable seed used for this run's randomization. |
 
 ## Wild randomization
@@ -207,8 +212,9 @@ normal mandatory-nickname and gift encounter policies still apply.
 
 Gold's rival continues to steal the starter from the original counter slot.
 That slot now contains its randomized species. Later rival battles advance
-through the replacement's first evolution path when one exists, while keeping
-the authored rival levels and all nonstarter party members unchanged.
+through the replacement's first evolution path when one exists. The trainer
+randomizer never replaces this synchronized starter line, although it may
+replace the rival's other party members when enabled.
 
 ## Gift randomization
 
@@ -232,6 +238,34 @@ The `GIFTS` Nuzlocke policy remains independent. `GIFT MONS` decides which
 species is received, while `GIFTS` decides whether receiving it consumes the
 area's encounter. Day-Care breeding Eggs are governed by `BREEDING` and are
 not species-randomized by this feature.
+
+## Trainer randomization
+
+`TRAINERS` randomizes every eligible trainer party slot using the stable run
+seed, trainer class, trainer member, and party position. Fighting or rematching
+the same trainer does not reroll its team.
+
+| Mode | Behaviour |
+| --- | --- |
+| `OFF` | Preserves Gold's original trainer species. |
+| `BALANCED` | Replaces each slot with a similar-BST Pokémon at the same evolution stage. |
+| `CHAOS` | Replaces each slot from the complete permitted Gen 1 and Gen 2 species pool. |
+
+Party size, held items, fixed trainer DVs, and the level entering the
+randomizer are preserved. If level scaling is enabled, it determines that
+level first. Each replacement then receives the latest four level-up moves it
+can legally know at that final level, replacing moves authored for the original
+species.
+
+`TRAINER LEG` excludes legendary and mythical replacements by default.
+`ALLOW` adds them to the available pool. Balanced mode still requires its
+evolution-stage and similar-BST match.
+
+`BOSSES` includes Gym Leaders, the rivals, Elite Four, Champion Lance, Kanto
+leaders, Blue, and Red. `EXCLUDE` preserves those teams while ordinary trainers
+continue to randomize. The rival's starter line always remains synchronized
+with the separately configured starter randomizer, even when boss trainer
+randomization is excluded.
 
 ## Encounter rules
 
@@ -486,7 +520,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.22.0 |
+| Current mod version | 0.23.0 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly

@@ -220,6 +220,23 @@ eq(intro[21].choices[1], "EXCLUDE",
   "legendary gifts default to excluded")
 eq(intro[21].choices[2], "ALLOW",
   "Oak can allow legendary gifts")
+eq(intro[22].saveKey, "trainer_randomizer",
+  "Oak asks how trainer Pokemon are randomized")
+eq(intro[22].choices[1], "OFF", "trainer randomization defaults to off")
+eq(intro[22].choices[2], "BALANCED", "Oak offers balanced trainers")
+eq(intro[22].choices[3], "CHAOS", "Oak offers chaotic trainers")
+eq(intro[23].saveKey, "trainer_legendaries",
+  "Oak asks whether trainers may use legendary Pokemon")
+eq(intro[23].choices[1], "EXCLUDE",
+  "legendary trainer Pokemon default to excluded")
+eq(intro[23].choices[2], "ALLOW",
+  "Oak can allow legendary trainer Pokemon")
+eq(intro[24].saveKey, "trainer_bosses",
+  "Oak asks whether boss teams are randomized")
+eq(intro[24].choices[1], "INCLUDE",
+  "boss teams default to included")
+eq(intro[24].choices[2], "EXCLUDE",
+  "Oak can preserve boss teams")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -280,6 +297,15 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "gift_legendaries", value = "exclude",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "trainer_randomizer", value = "balanced",
+})
+h:emit("intro.oak_speech.answered", {
+  saveKey = "trainer_legendaries", value = "exclude",
+})
+h:emit("intro.oak_speech.answered", {
+  saveKey = "trainer_bosses", value = "include",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -313,6 +339,12 @@ eq(h.save.gift_randomizer, "balanced",
   "new-run gift randomizer mode is persisted")
 eq(h.save.gift_legendaries, "exclude",
   "new-run gift legendary policy is persisted")
+eq(h.save.trainer_randomizer, "balanced",
+  "new-run trainer randomizer mode is persisted")
+eq(h.save.trainer_legendaries, "exclude",
+  "new-run trainer legendary policy is persisted")
+eq(h.save.trainer_bosses, "include",
+  "new-run trainer boss policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -486,10 +518,40 @@ eq(settings.items[20].right, "ALLOW",
 settings.opts.onChoose(settings.items[20], settings)
 eq(h.save.gift_legendaries, "exclude",
   "gift legendary policy cycles to EXCLUDE")
-local visibleSeed = tonumber(settings.items[21].right)
-eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+eq(settings.items[21].right, "BALANCED",
+  "active settings show balanced trainer randomization")
 settings.opts.onChoose(settings.items[21], settings)
-eq(tonumber(settings.items[21].right), visibleSeed,
+eq(h.save.trainer_randomizer, "chaos",
+  "trainer randomizer can change to CHAOS")
+eq(settings.items[21].right, "CHAOS", "chaos trainer mode is displayed")
+settings.opts.onChoose(settings.items[21], settings)
+eq(h.save.trainer_randomizer, "off", "trainer randomizer can change to OFF")
+settings.opts.onChoose(settings.items[21], settings)
+eq(h.save.trainer_randomizer, "balanced",
+  "trainer randomizer cycles back to BALANCED")
+eq(settings.items[22].right, "EXCLUDE",
+  "legendary trainer Pokemon default to excluded")
+settings.opts.onChoose(settings.items[22], settings)
+eq(h.save.trainer_legendaries, "allow",
+  "legendary trainer Pokemon can be allowed")
+eq(settings.items[22].right, "ALLOW",
+  "allowed trainer legendaries are displayed")
+settings.opts.onChoose(settings.items[22], settings)
+eq(h.save.trainer_legendaries, "exclude",
+  "trainer legendary policy cycles to EXCLUDE")
+eq(settings.items[23].right, "INCLUDE",
+  "boss teams default to included")
+settings.opts.onChoose(settings.items[23], settings)
+eq(h.save.trainer_bosses, "exclude", "boss teams can be excluded")
+eq(settings.items[23].right, "EXCLUDE",
+  "excluded boss teams are displayed")
+settings.opts.onChoose(settings.items[23], settings)
+eq(h.save.trainer_bosses, "include",
+  "boss policy cycles back to INCLUDE")
+local visibleSeed = tonumber(settings.items[24].right)
+eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+settings.opts.onChoose(settings.items[24], settings)
+eq(tonumber(settings.items[24].right), visibleSeed,
   "the displayed seed is read-only")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
