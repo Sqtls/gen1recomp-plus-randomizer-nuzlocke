@@ -21,6 +21,7 @@ function StrictEncounters.install(mod)
         { label = "SET MODE", value = "forced_set_mode" },
         { label = "NO BATTLE ITEMS", value = "no_battle_items" },
         { label = "STATIC", value = "static_encounters" },
+        { label = "GIFTS", value = "gift_encounters" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -45,6 +46,7 @@ function StrictEncounters.install(mod)
         items[9].right = setting(mod, "no_battle_items", false)
           and "ON" or "OFF"
         items[10].right = setting(mod, "static_encounters", "area"):upper()
+        items[11].right = setting(mod, "gift_encounters", "bonus"):upper()
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -85,6 +87,10 @@ function StrictEncounters.install(mod)
             mod.save:set("static_encounters",
               ({ area = "bonus", bonus = "forbid", forbid = "area" })[current]
                 or "area")
+          elseif item.value == "gift_encounters" then
+            mod.save:set("gift_encounters",
+              setting(mod, "gift_encounters", "bonus") == "bonus"
+                and "area" or "bonus")
           elseif item.value == "done" then
             menu:close()
             return
@@ -157,6 +163,12 @@ function StrictEncounters.install(mod)
       choices = { "AREA", "BONUS", "FORBID" },
       values = { "area", "bonus", "forbid" },
     })
+    mod.ui.insertStepAfter(result, "plus_static_encounters", {
+      id = "plus_gift_encounters", kind = "choice", pic = "oak",
+      saveKey = "gift_encounters",
+      text = "Should gifts use\ntheir area's catch?",
+      choices = { "BONUS", "AREA" }, values = { "bonus", "area" },
+    })
     return result
   end)
 
@@ -169,7 +181,8 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "level_scaling"
         or ev.saveKey == "forced_set_mode"
         or ev.saveKey == "no_battle_items"
-        or ev.saveKey == "static_encounters") then
+        or ev.saveKey == "static_encounters"
+        or ev.saveKey == "gift_encounters") then
       mod.save:set(ev.saveKey, ev.value)
       if ev.saveKey == "forced_set_mode" and ev.value == true then
         local rule = mod.exports.forcedSetMode
@@ -217,7 +230,8 @@ function StrictEncounters.install(mod)
     local areas = mod.save:get("encounter_areas")
     if type(areas) == "table" then
       for _, area in pairs(areas) do
-        if type(area) == "table" and area.status == "caught" then
+        if type(area) == "table" and area.status == "caught"
+            and area.result ~= "gift" then
           mod.save:set("nuzlocke_started", true)
           return true
         end

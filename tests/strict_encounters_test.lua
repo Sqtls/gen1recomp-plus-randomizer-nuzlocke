@@ -146,6 +146,10 @@ eq(intro[11].saveKey, "static_encounters",
 eq(intro[11].choices[1], "AREA", "static encounters default to area policy")
 eq(intro[11].choices[2], "BONUS", "Oak offers bonus static encounters")
 eq(intro[11].choices[3], "FORBID", "Oak can forbid static captures")
+eq(intro[12].saveKey, "gift_encounters",
+  "Oak asks how gift encounters are handled")
+eq(intro[12].choices[1], "BONUS", "gifts default to bonus encounters")
+eq(intro[12].choices[2], "AREA", "Oak can make gifts consume their area")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -176,6 +180,9 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "static_encounters", value = "area",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "gift_encounters", value = "bonus",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -189,6 +196,8 @@ eq(h.save.no_battle_items, false,
   "new-run battle-item setting is persisted")
 eq(h.save.static_encounters, "area",
   "new-run static encounter policy is persisted")
+eq(h.save.gift_encounters, "bonus",
+  "new-run gift encounter policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -266,6 +275,12 @@ settings.opts.onChoose(settings.items[10], settings)
 eq(h.save.static_encounters, "forbid", "static policy can change to FORBID")
 settings.opts.onChoose(settings.items[10], settings)
 eq(h.save.static_encounters, "area", "static policy cycles back to AREA")
+eq(settings.items[11].right, "BONUS", "gift encounters default to bonus")
+settings.opts.onChoose(settings.items[11], settings)
+eq(h.save.gift_encounters, "area", "gift policy can change to AREA")
+eq(settings.items[11].right, "AREA", "area gift policy is displayed")
+settings.opts.onChoose(settings.items[11], settings)
+eq(h.save.gift_encounters, "bonus", "gift policy cycles back to BONUS")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.
@@ -784,5 +799,32 @@ eq(upgraded.save.nuzlocke_started, true,
   "existing caught route migrates to a permanently started run")
 eq(upgraded.save.encounter_areas["LANDMARK:17"].status, "active",
   "upgraded run stays active even when no Balls remain")
+
+-- AREA gifts can exist before the player owns a Ball. They must not trigger
+-- the legacy caught-route migration and start wild encounter enforcement.
+local giftOnlyMod, giftOnly = newMod({
+  strict_encounters = true,
+  gift_encounters = "area",
+  encounter_areas = {
+    ["LANDMARK:1"] = {
+      status = "caught", species = "CYNDAQUIL", result = "gift",
+    },
+  },
+})
+assert(loadfile(root .. "/main.lua"))(giftOnlyMod)
+local giftOnlyGame = {
+  save = { party = {}, boxes = {}, inventory = {} },
+  data = game.data,
+}
+giftOnlyMod.game = giftOnlyGame
+giftOnly:setMap("ROUTE_29")
+giftOnly:emit("battle.started", {
+  battle = { wild = true, enemy = { species = "SENTRET" } },
+  kind = "wild", species = "SENTRET",
+})
+eq(giftOnly.save.nuzlocke_started, nil,
+  "a pre-Ball AREA gift does not start wild encounter enforcement")
+eq(giftOnly.save.encounter_areas["LANDMARK:16"], nil,
+  "a pre-Ball wild encounter remains free after receiving an AREA gift")
 
 print(("strict encounters: %d checks passed"):format(checks))

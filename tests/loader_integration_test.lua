@@ -19,6 +19,8 @@ local files = {
   ["mods/strict/features/run_report.lua"] = read("features/run_report.lua"),
   ["mods/strict/features/mandatory_nicknames.lua"] =
     read("features/mandatory_nicknames.lua"),
+  ["mods/strict/features/gift_encounters.lua"] =
+    read("features/gift_encounters.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
   ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
   ["mods/strict/features/forced_set_mode.lua"] =
@@ -258,6 +260,17 @@ assert(bucket.run_catches[2].species == "SENTRET"
     and bucket.run_catches[2].location == "ROUTE 29",
   "catch journal must retain species and Gold location")
 
+local PrizeMenu = require("src.ui.gen2.PrizeMenu")
+local giftCounter = { kind = "mon" }
+local giftPrize = { id = "SENTRET", cost = 0 }
+bucket.gift_encounters = "area"
+assert(PrizeMenu.check(game.save, giftCounter, giftPrize, game.data)
+    == "gift_area",
+  "production gift AREA policy must refuse on a consumed landmark")
+bucket.gift_encounters = "bonus"
+assert(PrizeMenu.check(game.save, giftCounter, giftPrize, game.data) == "ok",
+  "production gift BONUS policy must bypass a consumed landmark")
+
 local second = { wild = true, enemy = { species = "HOOTHOOT" } }
 run.loader.events:emit("battle.started", {
   battle = second, kind = "wild", species = "HOOTHOOT",
@@ -386,4 +399,4 @@ assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
   "rescued Pokemon must leave its box without reordering the rest")
 
 run.release()
-print("production loader integration: 32 checks passed")
+print("production loader integration: 34 checks passed")

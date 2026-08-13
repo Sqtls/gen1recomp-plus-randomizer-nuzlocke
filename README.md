@@ -7,8 +7,8 @@ in gen1recomp++, built one independently validated feature at a time.
 
 Strict first encounters, the dupes and shiny clauses, party permadeath,
 failed-run reports, mandatory nicknames, level caps, level scaling, enforced
-Set battle mode, static encounter policies, and the optional no-battle-items
-challenge are implemented.
+Set battle mode, static and gift encounter policies, and the optional
+no-battle-items challenge are implemented.
 
 - Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE`/`OFF` duplicate-family
   rule, and the shiny clause for each new run.
@@ -27,6 +27,13 @@ challenge are implemented.
   over the shiny clause, including for the Red Gyarados. Detection follows
   Gold's scripted encounter origin rather than a species list, so randomized
   static species retain the selected policy.
+- Gifts are configurable as `BONUS` or `AREA`, defaulting to `BONUS`. `AREA`
+  consumes the landmark where the Pokémon or Egg is received and refuses a
+  gift if that landmark was already used. Blocked scripted gifts abort before
+  their claimed flag is set, so they remain retryable. This covers starters,
+  scripted gifts such as Eevee, Togepi's Egg, and Game Corner Pokémon. Eggs
+  count where received rather than where hatched; in-game and link trades are
+  excluded.
 - Trainer battles, the catching tutorial, and the Bug-Catching Contest are
   exempt.
 - Gold maps sharing the same landmark share one encounter allocation.
@@ -118,6 +125,7 @@ luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/strict_encounters_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/permadeath_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/run_report_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/mandatory_nicknames_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/gift_encounters_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_caps_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_scaling_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/forced_set_mode_test.lua
