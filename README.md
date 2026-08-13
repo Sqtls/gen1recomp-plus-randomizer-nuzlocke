@@ -6,7 +6,7 @@ in gen1recomp++, built one independently validated feature at a time.
 ## Status
 
 Strict first encounters, the dupes and shiny clauses, party permadeath,
-failed-run reports, and mandatory nicknames are implemented.
+failed-run reports, mandatory nicknames, and level caps are implemented.
 
 - Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE` duplicate-family rule, and
   the shiny clause for each new run.
@@ -32,6 +32,15 @@ failed-run reports, and mandatory nicknames are implemented.
   the rule. Oak and `START` → `NUZLOCKE` both expose the setting, which defaults
   to ON. Rejected blank and species-default entries show an inline explanation
   and keep the naming screen open.
+- With `LEVEL CAPS` enabled, battle EXP, Rare Candies, and Day Care growth stop
+  at the current major-challenge cap. The settings screen displays that cap.
+  Progressing past a milestone immediately permits growth to the next cap.
+- Johto caps are Falkner 9, Bugsy 16, Whitney 20, Morty 25, Chuck 30, Pryce
+  31, Jasmine 35, and Clair 40. Pryce is deliberately checked before Jasmine
+  so the cap never falls from 35 back to 31 when those gyms are done out of
+  order.
+- The Elite Four and Champion cap is 50. Kanto remains at 50 until seven Kanto
+  badges, rises to 58 for Blue, then 81 for Red. Defeating Red removes the cap.
 
 Gold v0.1.80 is handled directly for starter/scripted-gift and wild-catch
 nickname flows because that build predates the public nickname hook call sites.
@@ -79,6 +88,7 @@ luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/strict_encounters_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/permadeath_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/run_report_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/mandatory_nicknames_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_caps_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
 python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture
