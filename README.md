@@ -9,14 +9,17 @@ Strict first encounters, the dupes and shiny clauses, party permadeath,
 failed-run reports, mandatory nicknames, level caps, level scaling, enforced
 Set battle mode, and the optional no-battle-items challenge are implemented.
 
-- Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE` duplicate-family rule, and
-  the shiny clause for each new run.
+- Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE`/`OFF` duplicate-family
+  rule, and the shiny clause for each new run.
 - `START` → `NUZLOCKE` changes those settings for the active save.
 - The first eligible wild encounter reserves the whole named area. Catching it
   seals the area as caught; knocking it out, running, losing, or letting it flee
   permanently fails the area.
 - Failed ball throws do not consume another encounter while the same battle is
   still active.
+- `DUPES: SKIP` refuses any previously caught evolution-family member without
+  consuming the area, `LOSE` immediately fails the area, and `OFF` allows the
+  duplicate to become the area's ordinary encounter.
 - Trainer battles, the catching tutorial, and the Bug-Catching Contest are
   exempt.
 - Gold maps sharing the same landmark share one encounter allocation.
