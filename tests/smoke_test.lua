@@ -1,6 +1,9 @@
 local source = debug.getinfo(1, "S").source:sub(2)
 local root = source:match("^(.*)/tests/[^/]+$") or "."
 
+local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
+package.loaded[battleStateModule] = { useItem = function() end }
+
 local function read(relative)
   local file = assert(io.open(root .. "/" .. relative, "rb"))
   local body = file:read("*a")

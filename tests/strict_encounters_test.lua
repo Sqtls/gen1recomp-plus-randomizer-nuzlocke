@@ -9,6 +9,15 @@ local function eq(actual, expected, label)
     .. ", got " .. tostring(actual))
 end
 
+local legacyBattleState = {
+  useItem = function(self, itemId)
+    self.usedItem = itemId
+    self.save.inventory[itemId] = self.save.inventory[itemId] - 1
+  end,
+}
+local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
+package.loaded[battleStateModule] = legacyBattleState
+
 local function newMod(savedValues)
   local hookChains = {}
   local listeners = {}
@@ -140,6 +149,7 @@ eq(settings.items[2].right, "SKIP", "active settings show duplicate policy")
 -- which share Gold's native landmark are one area even when their map ids differ.
 game.save = { party = {}, boxes = {} }
 game.data = {
+  items = { POKE_BALL = { pocket = "BALL" } },
   gen2Maps = {
     ROUTE_29 = { landmark = 16 },
     ROUTE_29_GATE = { landmark = 16 },
@@ -179,7 +189,8 @@ local allowed, denial = catchHook(function()
 end, { game = game, battle = { wild = true }, species = "SENTRET" })
 eq(allowed, false, "later catches in the failed area are blocked")
 eq(delegated, false, "blocked catch does not consume a ball or turn")
-eq(type(denial), "string", "blocked catch explains the failed encounter")
+eq(denial, "SENTRET was defeated.\nEncounter failed!",
+  "blocked catch explains which encounter was defeated")
 
 -- A failed ball keeps the same encounter alive; only a successful catch seals
 -- the area as caught and blocks future battles there.
@@ -197,6 +208,17 @@ eq(allowed, true, "first encounter may use a ball")
 eq(delegated, true, "allowed throw follows Gold's normal ball path")
 eq(h.save.encounter_areas["LANDMARK:17"].status, "active",
   "failed ball does not burn the route while battle continues")
+local validScreen = {
+  game = game,
+  save = { inventory = { POKE_BALL = 2 } },
+  battle = catchBattle,
+  phase = "menu",
+}
+legacyBattleState.useItem(validScreen, "POKE_BALL")
+eq(validScreen.save.inventory.POKE_BALL, 1,
+  "valid first encounter reaches Gold's original ball path")
+eq(validScreen.usedItem, "POKE_BALL",
+  "valid first encounter is not refused by the compatibility gate")
 local rateHook = h.hooks["catch.rate"]
 eq(type(rateHook), "function", "Gold v0.1.80 catch fallback is registered")
 delegated = false
@@ -224,6 +246,19 @@ end, "MASTER_BALL", blockedBattle.enemy, nil, {})
 eq(caught, false, "Gold v0.1.80 cannot catch again in a sealed area")
 eq(rate, 0, "blocked v0.1.80 catch is forced to fail")
 eq(delegated, false, "blocked v0.1.80 catch bypasses the vanilla roll")
+local blockedScreen = {
+  game = game,
+  save = { inventory = { POKE_BALL = 2 } },
+  battle = blockedBattle,
+  phase = "menu",
+}
+legacyBattleState.useItem(blockedScreen, "POKE_BALL")
+eq(blockedScreen.save.inventory.POKE_BALL, 2,
+  "Gold v0.1.80 refuses a blocked ball without consuming it")
+eq(blockedScreen.usedItem, nil,
+  "Gold v0.1.80 returns before the vanilla ball path")
+eq(blockedScreen.message, "Already caught\nSENTRET here!",
+  "blocked ball explains the recorded catch")
 h:emit("battle.ended", { battle = blockedBattle, result = "run" })
 
 -- Dupes checks the complete evolution family and remembers catches even if
@@ -240,7 +275,7 @@ allowed, denial = catchHook(function() return true end, {
   game = game, battle = skippedDupe, species = "FURRET",
 })
 eq(allowed, false, "SKIP family duplicate cannot be caught")
-eq(denial:find("duplicate", 1, true) ~= nil, true,
+eq(denial:lower():find("duplicate", 1, true) ~= nil, true,
   "SKIP duplicate denial explains why")
 h:emit("battle.ended", { battle = skippedDupe, result = "run" })
 eq(h.save.encounter_areas["LANDMARK:18"], nil,
@@ -269,6 +304,18 @@ for _, outcome in ipairs({ "run", "fled", "lose" }) do
   eq(h.save.encounter_areas["LANDMARK:" .. landmark].status, "failed",
     outcome .. " permanently burns the route")
 end
+h:setMap("ROUTE_33")
+local ranScreen = {
+  game = game,
+  save = { inventory = { POKE_BALL = 2 } },
+  battle = { wild = true, enemy = { species = "SENTRET" } },
+  phase = "menu",
+}
+legacyBattleState.useItem(ranScreen, "POKE_BALL")
+eq(ranScreen.message, "You ran from\nHOOTHOOT here!",
+  "blocked ball identifies a prior run and its Pokemon")
+eq(ranScreen.save.inventory.POKE_BALL, 2,
+  "ran-from encounter refuses a ball without consuming it")
 
 -- The toggle takes effect immediately. Trainer battles, the catch tutorial,
 -- and the Bug-Catching Contest never create encounter records.

@@ -110,6 +110,13 @@ function StrictEncounters.install(mod)
     mod.save:set("encounter_areas", areas)
   end
 
+  local function pokemonName(game, species)
+    local pokemon = game and game.data and game.data.pokemon
+    local definition = pokemon and pokemon[species]
+    return tostring(definition and definition.name or species or "POK\195\169MON")
+      :gsub("_", " ")
+  end
+
   local function eligibleBattle(battle, game, ev)
     local save = game and game.save
     local contest = battle and battle.contest
@@ -165,10 +172,10 @@ function StrictEncounters.install(mod)
     activeBattle = battle
     local key, mapId = canonicalArea(game)
     local existing = ledger()[key]
-    battles[battle] = { key = key }
+    local species = ev.species or battle.enemy and battle.enemy.species
+    battles[battle] = { key = key, species = species }
     if existing then return end
 
-    local species = ev.species or battle.enemy and battle.enemy.species
     if ownsFamily(game, species) then
       local mode = setting(mod, "dupes_mode", "skip")
       battles[battle].duplicate = mode
@@ -219,14 +226,28 @@ function StrictEncounters.install(mod)
     local key = canonicalArea(game)
     local state = ledger()[key]
     local current = battles[battle]
+    local species = state and state.species or current and current.species
+      or battle and battle.enemy and battle.enemy.species
+    local name = pokemonName(game, species)
     if current and current.duplicate then
       return current.duplicate == "lose"
-        and "A duplicate encounter\nwas lost for this area!"
-        or "This is a duplicate.\nFind a different family!"
+        and ("Duplicate %s.\nEncounter failed!"):format(name)
+        or ("Duplicate %s.\nCatch refused!"):format(name)
     end
     if state and (state.status == "caught" or state.status == "failed"
         or (state.status == "active" and not current)) then
-      return "This area's encounter\nis no longer available!"
+      if state.status == "caught" then
+        return ("Already caught\n%s here!"):format(name)
+      elseif state.result == "run" then
+        return ("You ran from\n%s here!"):format(name)
+      elseif state.result == "fled" then
+        return ("%s fled.\nEncounter failed!"):format(name)
+      elseif state.result == "lose" then
+        return ("Lost to %s.\nEncounter failed!"):format(name)
+      elseif state.result == "duplicate" then
+        return ("Duplicate %s.\nEncounter failed!"):format(name)
+      end
+      return ("%s was defeated.\nEncounter failed!"):format(name)
     end
     return nil
   end
@@ -246,6 +267,28 @@ function StrictEncounters.install(mod)
     if captureDenial(mod.game, battle) then return false, 0 end
     return next(ball, mon, def, opts)
   end, 1000)
+
+  -- Gold v0.1.80 has no public hook before a ball is consumed. This narrowly
+  -- patches that version's Gold battle screen so denial behaves like the
+  -- public battle.catch_allowed seam available in newer builds.
+  local useItem = require("src.ui.gen2.BattleState").useItem
+  assert(type(useItem) == "function",
+    "Gold BattleState.useItem is unavailable; update this mod")
+  require("src.ui.gen2.BattleState").useItem = function(screen, itemId, ...)
+    local game = screen and screen.game or mod.game
+    local items = game and game.data and game.data.items
+    local item = items and items[itemId]
+    if item and item.pocket == "BALL" then
+      local denial = captureDenial(game, screen and screen.battle)
+      if denial then
+        screen.message = denial
+        screen.messageTimer = 48
+        screen.phase = "resolving"
+        return
+      end
+    end
+    return useItem(screen, itemId, ...)
+  end
 end
 
 return StrictEncounters

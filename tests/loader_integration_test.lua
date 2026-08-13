@@ -34,6 +34,7 @@ assert(hooks:depth("ui.start_menu.items") == 1,
 local game = {
   data = {
     gen2Maps = { ROUTE_29 = { landmark = 16 } },
+    items = { POKE_BALL = { pocket = "BALL" } },
     pokemon = {
       SENTRET = { evolutions = {} },
       HOOTHOOT = { evolutions = {} },
@@ -86,5 +87,21 @@ local caught = Catching.attempt({
 assert(caught == false,
   "Gold v0.1.80 must reject a second catch through catch.rate")
 
+local battleStateKey = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
+local BattleState = assert(package.loaded[battleStateKey])
+local screen = {
+  game = game,
+  save = { inventory = { POKE_BALL = 2 } },
+  battle = second,
+  phase = "menu",
+}
+BattleState.useItem(screen, "POKE_BALL")
+assert(screen.save.inventory.POKE_BALL == 2,
+  "blocked ball must not be consumed")
+assert(screen.message == "Already caught\nSENTRET here!",
+  "blocked ball must explain the recorded encounter")
+assert(screen.phase == "resolving",
+  "blocked ball message must enter the normal battle message phase")
+
 run.release()
-print("production loader integration: 7 checks passed")
+print("production loader integration: 10 checks passed")

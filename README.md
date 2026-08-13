@@ -18,8 +18,11 @@ The first feature is strict first-encounter enforcement.
 - Trainer battles, the catching tutorial, and the Bug-Catching Contest are
   exempt.
 - Gold maps sharing the same landmark share one encounter allocation.
-- On Gold v0.1.80, blocked catches are forced to fail through its catch-rate
-  hook and therefore still consume the selected ball and turn.
+- Blocked balls show the recorded encounter outcome and return before the ball
+  or turn is consumed, including on Gold v0.1.80.
+
+Gold v0.1.80 lacks a public hook before ball consumption, so this version uses
+the `engine_internals` permission solely to gate that Gold item-use boundary.
 
 ## Principles
 
