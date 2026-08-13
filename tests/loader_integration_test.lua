@@ -21,6 +21,8 @@ local files = {
     read("features/mandatory_nicknames.lua"),
   ["mods/strict/features/gift_encounters.lua"] =
     read("features/gift_encounters.lua"),
+  ["mods/strict/features/breeding_eggs.lua"] =
+    read("features/breeding_eggs.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
   ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
   ["mods/strict/features/forced_set_mode.lua"] =

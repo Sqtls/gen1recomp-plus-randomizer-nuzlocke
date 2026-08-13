@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.14.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.15.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -53,6 +53,7 @@ scaled, and a failed run ends with a complete run report.
 | Level caps | Stops EXP, Rare Candies, and Day-Care growth at the next major challenge. |
 | Dynamic scaling | Keeps underlevelled wild Pokémon, trainers, and Kanto leaders relevant to the current party. |
 | Static and gift policies | Controls whether special encounters consume an area, count as a bonus, or are forbidden. |
+| Breeding Egg policy | Forbids bred Eggs, limits them to the Day-Care area, or preserves unrestricted breeding. |
 | Set mode | Can permanently enforce `SET` battle style. |
 | No battle items | Can forbid every manually used battle item except Poké Balls. |
 | Run reports | Records catches, encounter failures, deaths, badges, and play time for the failed-run screen. |
@@ -100,6 +101,7 @@ the in-game Nuzlocke settings screen.
 | `NO BATTLE ITEMS` | `OFF` | `OFF` / `ON` | Forbids non-Ball items during battle. |
 | `STATIC` | `AREA` | `AREA` / `BONUS` / `FORBID` | Controls scripted static encounters. |
 | `GIFTS` | `BONUS` | `BONUS` / `AREA` | Controls gifted Pokémon and Eggs. |
+| `BREEDING` | `FORBID` | `FORBID` / `AREA` / `BONUS` | Controls Eggs produced by the Day Care. |
 
 ## Encounter rules
 
@@ -193,6 +195,22 @@ Pokémon, and other scripted gifts.
 Blocked gifts remain retryable: event flags, coins, and other resources are not
 consumed. Failed or full-party grants do not reserve the area. Eggs count where
 they are received, not where they hatch. In-game and link trades are excluded.
+
+### Bred Eggs
+
+Day-Care breeding has a separate policy from scripted gift Eggs such as
+Togepi. This closes the unlimited breeding loophole without preventing the Day
+Care from raising deposited Pokémon.
+
+| Policy | Behaviour |
+| --- | --- |
+| `FORBID` | Parents can be deposited and raised, but cannot produce or hand over Eggs. |
+| `AREA` | The first collected Egg consumes the Day-Care landmark. No further bred Eggs can be produced or collected. |
+| `BONUS` | Preserves Gold's unrestricted repeat breeding without consuming an area. |
+
+An AREA Egg is recorded only after it successfully enters the party. A full
+party or blocked collection leaves the Egg retryable and does not consume the
+landmark.
 
 ## Permadeath and failed runs
 
@@ -324,7 +342,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.14.0 |
+| Current mod version | 0.15.0 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly

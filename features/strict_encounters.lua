@@ -22,6 +22,7 @@ function StrictEncounters.install(mod)
         { label = "NO BATTLE ITEMS", value = "no_battle_items" },
         { label = "STATIC", value = "static_encounters" },
         { label = "GIFTS", value = "gift_encounters" },
+        { label = "BREEDING", value = "breeding_eggs" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -47,6 +48,7 @@ function StrictEncounters.install(mod)
           and "ON" or "OFF"
         items[10].right = setting(mod, "static_encounters", "area"):upper()
         items[11].right = setting(mod, "gift_encounters", "bonus"):upper()
+        items[12].right = setting(mod, "breeding_eggs", "forbid"):upper()
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -91,6 +93,11 @@ function StrictEncounters.install(mod)
             mod.save:set("gift_encounters",
               setting(mod, "gift_encounters", "bonus") == "bonus"
                 and "area" or "bonus")
+          elseif item.value == "breeding_eggs" then
+            local current = setting(mod, "breeding_eggs", "forbid")
+            mod.save:set("breeding_eggs",
+              ({ forbid = "area", area = "bonus", bonus = "forbid" })[current]
+                or "forbid")
           elseif item.value == "done" then
             menu:close()
             return
@@ -169,6 +176,13 @@ function StrictEncounters.install(mod)
       text = "Should gifts use\ntheir area's catch?",
       choices = { "BONUS", "AREA" }, values = { "bonus", "area" },
     })
+    mod.ui.insertStepAfter(result, "plus_gift_encounters", {
+      id = "plus_breeding_eggs", kind = "choice", pic = "oak",
+      saveKey = "breeding_eggs",
+      text = "How should bred\nEGGS work?",
+      choices = { "FORBID", "AREA", "BONUS" },
+      values = { "forbid", "area", "bonus" },
+    })
     return result
   end)
 
@@ -182,7 +196,8 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "forced_set_mode"
         or ev.saveKey == "no_battle_items"
         or ev.saveKey == "static_encounters"
-        or ev.saveKey == "gift_encounters") then
+        or ev.saveKey == "gift_encounters"
+        or ev.saveKey == "breeding_eggs") then
       mod.save:set(ev.saveKey, ev.value)
       if ev.saveKey == "forced_set_mode" and ev.value == true then
         local rule = mod.exports.forcedSetMode
