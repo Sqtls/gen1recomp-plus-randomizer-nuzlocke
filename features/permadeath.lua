@@ -1,4 +1,5 @@
 local Permadeath = {}
+local GAME_OVER_SCREEN = "Gen1RecompPlusNuzlockeGameOver"
 
 local function setting(mod, key, default)
   local value = mod.save:get(key)
@@ -8,10 +9,52 @@ end
 
 function Permadeath.install(mod)
   local deaths = setmetatable({}, { __mode = "k" })
+  local shown = setmetatable({}, { __mode = "k" })
+  local deferred = setmetatable({}, { __mode = "k" })
 
   local function enabled()
     return mod.save:get("nuzlocke_started") == true
       and setting(mod, "permadeath", true) == true
+  end
+
+  mod.content.screens:register(GAME_OVER_SCREEN, {
+    new = function(game)
+      return mod.ui.ListMenu.new(game, "NUZLOCKE OVER", {
+        { label = "RETURN TO TITLE", value = "title" },
+      }, {
+        footer = "NO LIVING POK\195\169MON\nREMAIN IN PARTY OR PC.",
+        onChoose = function()
+          if game.returnToTitle then game:returnToTitle() end
+        end,
+        -- ListMenu pops on B before invoking this callback. Put the terminal
+        -- screen straight back so an ended run cannot resume with no party.
+        onCancel = function()
+          mod.ui.push(game, GAME_OVER_SCREEN)
+        end,
+      })
+    end,
+  })
+
+  local function showGameOver(game)
+    if not game or shown[game] or deferred[game] then return end
+    shown[game] = true
+    mod.ui.push(game, GAME_OVER_SCREEN)
+  end
+
+  local function rescueOrEnd(game)
+    local save = game and game.save
+    if not (save and save.party) or #save.party > 0 then return end
+    for boxIndex = 1, 14 do
+      local box = save.boxes and save.boxes[boxIndex]
+      for slot, mon in ipairs(box or {}) do
+        if not mon.isEgg and (mon.hp or 0) > 0 then
+          save.party[1] = table.remove(box, slot)
+          return "rescued"
+        end
+      end
+    end
+    mod.save:set("nuzlocke_game_over", true)
+    return "game_over"
   end
 
   mod.events:on("battle.fainted", function(ev)
@@ -39,9 +82,11 @@ function Permadeath.install(mod)
   local function removeFallen(game, fallen)
     local save = game and game.save
     if not (fallen and save and save.party) then return end
+    local removed = false
     for index = #save.party, 1, -1 do
       if fallen[save.party[index]] then
         table.remove(save.party, index)
+        removed = true
         local mail = save.mail and save.mail.party
         if mail then
           for slot = index, 5 do mail[slot] = mail[slot + 1] end
@@ -49,23 +94,14 @@ function Permadeath.install(mod)
         end
       end
     end
-    if #save.party > 0 then return end
-
-    for boxIndex = 1, 14 do
-      local box = save.boxes and save.boxes[boxIndex]
-      for slot, mon in ipairs(box or {}) do
-        if not mon.isEgg and (mon.hp or 0) > 0 then
-          save.party[1] = table.remove(box, slot)
-          return
-        end
-      end
-    end
+    if not removed then return end
+    return rescueOrEnd(game)
   end
 
   local function finalize(game, battle)
     local fallen = battle and deaths[battle]
     if battle then deaths[battle] = nil end
-    removeFallen(game, fallen)
+    return removeFallen(game, fallen)
   end
 
   local BattleState = require("src.ui.gen2.BattleState")
@@ -93,8 +129,16 @@ function Permadeath.install(mod)
     local function finish(...)
       if completed then return end
       completed = true
-      finalize(screen and screen.game or mod.game, screen and screen.battle)
-      if onDone then return onDone(...) end
+      local game = screen and screen.game or mod.game
+      local result = finalize(game, screen and screen.battle)
+      if result == "game_over" and game then deferred[game] = true end
+      local doneResult
+      if onDone then doneResult = onDone(...) end
+      if result == "game_over" then
+        if game then deferred[game] = nil end
+        showGameOver(game)
+      end
+      return doneResult
     end
     if screen then screen.onDone = finish end
     local result = finishBattle(screen, ...)
@@ -119,6 +163,29 @@ function Permadeath.install(mod)
     removeFallen(world and world.game or mod.game, fallen)
     return result
   end
+
+  local function restoreTerminalState()
+    local game = mod.game
+    if mod.save:get("nuzlocke_game_over") == true then
+      showGameOver(game)
+      return
+    end
+    if not enabled() then return end
+    local save = game and game.save
+    if save and save.party and #save.party == 0 then
+      local result = rescueOrEnd(game)
+      if result == "game_over" then showGameOver(game) end
+    end
+  end
+
+  mod.events:on("map.entered", restoreTerminalState)
+  mod.events:on("save.loaded", function()
+    if mod.game then shown[mod.game] = nil end
+    restoreTerminalState()
+  end)
+  mod.events:on("save.created", function()
+    if mod.game then shown[mod.game] = nil end
+  end)
 end
 
 return Permadeath

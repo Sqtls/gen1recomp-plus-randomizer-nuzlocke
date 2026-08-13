@@ -33,6 +33,9 @@ local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[worldModule] = World
 
 local listeners = {}
+local registeredScreens = {}
+local pushedScreens = {}
+local pushObserver
 local saved = {
   strict_encounters = true,
   permadeath = true,
@@ -61,7 +64,9 @@ local mod = {
   path = root,
   game = game,
   exports = {},
-  content = { screens = { register = function() end } },
+  content = { screens = { register = function(_, id, screen)
+    registeredScreens[id] = screen
+  end } },
   hooks = { wrap = function() end },
   events = {
     on = function(_, name, callback)
@@ -78,8 +83,19 @@ local mod = {
   },
   world = { current = function() return { mapId = "ROUTE_29" } end },
   ui = {
+    ListMenu = {
+      new = function(activeGame, title, items, opts)
+        return {
+          game = activeGame, title = title, items = items, opts = opts,
+        }
+      end,
+    },
     insertBefore = function(items) return items end,
     insertStepAfter = function(steps) return steps end,
+    push = function(activeGame, id)
+      pushedScreens[#pushedScreens + 1] = { game = activeGame, id = id }
+      if pushObserver then pushObserver(id) end
+    end,
   },
 }
 function mod:read(relative) return read(relative) end
@@ -221,5 +237,94 @@ eq(world.poisonPartyCount, 2,
 eq(#game.save.party, 1, "overworld poison faint triggers permadeath")
 eq(game.save.party[1], poisonSurvivor,
   "overworld poison faint preserves living party members")
+
+local finalDeath = { species = "CYNDAQUIL", hp = 0 }
+game.save.party = { finalDeath }
+game.save.boxes = {}
+saved.nuzlocke_game_over = nil
+pushedScreens = {}
+local terminalOrder = {}
+pushObserver = function()
+  terminalOrder[#terminalOrder + 1] = "game_over"
+end
+local terminalWipe = {
+  wild = true, party = game.save.party, outcome = "lose",
+}
+emit("battle.fainted", { battle = terminalWipe, battler = finalDeath,
+  side = { index = 1, key = "player" } })
+local respawnComplete = false
+BattleState.finishBattle({
+  game = game,
+  save = game.save,
+  battle = terminalWipe,
+  onDone = function()
+    respawnComplete = true
+    terminalOrder[#terminalOrder + 1] = "respawn"
+  end,
+})
+eq(#game.save.party, 0,
+  "terminal wipe removes the final fainted Pokemon")
+eq(saved.nuzlocke_game_over, true,
+  "terminal wipe records game over")
+eq(#pushedScreens, 1,
+  "terminal wipe opens exactly one game-over screen")
+eq(pushedScreens[1] and pushedScreens[1].id,
+  "Gen1RecompPlusNuzlockeGameOver",
+  "terminal wipe opens the Nuzlocke game-over screen")
+eq(respawnComplete, true,
+  "blackout respawn completes before the game-over screen opens")
+eq(table.concat(terminalOrder, ","), "respawn,game_over",
+  "game-over screen opens after blackout respawn")
+
+local gameOverFactory = registeredScreens.Gen1RecompPlusNuzlockeGameOver
+eq(type(gameOverFactory), "table", "game-over screen is registered")
+local gameOverMenu = gameOverFactory.new(game)
+eq(gameOverMenu.title, "NUZLOCKE OVER",
+  "terminal screen clearly announces game over")
+local pushesBeforeCancel = #pushedScreens
+gameOverMenu.opts.onCancel()
+eq(#pushedScreens, pushesBeforeCancel + 1,
+  "B cannot dismiss the terminal screen back into the run")
+local returnedToTitle = false
+game.returnToTitle = function() returnedToTitle = true end
+gameOverMenu.opts.onChoose(gameOverMenu.items[1])
+eq(returnedToTitle, true,
+  "terminal screen can return to the title")
+
+local strandedBackup = { species = "PIDGEY", hp = 15 }
+game.save.party = {}
+game.save.boxes = { [1] = { strandedBackup } }
+saved.nuzlocke_game_over = nil
+pushedScreens = {}
+emit("save.loaded", { save = game.save })
+eq(game.save.party[1], strandedBackup,
+  "v0.3.0 empty-party save recovers a living boxed Pokemon")
+eq(#pushedScreens, 0,
+  "recovered v0.3.0 save does not show game over")
+
+game.save.party = {}
+game.save.boxes = {}
+saved.nuzlocke_game_over = nil
+pushedScreens = {}
+emit("save.loaded", { save = game.save })
+eq(saved.nuzlocke_game_over, true,
+  "v0.3.0 empty-party save with no backup becomes game over")
+eq(#pushedScreens, 1,
+  "v0.3.0 stranded save opens the terminal screen on load")
+
+local finalPoisonDeath = { species = "SENTRET", hp = 0 }
+game.save.party = { finalPoisonDeath }
+game.save.boxes = {}
+saved.nuzlocke_game_over = nil
+pushedScreens = {}
+emit("save.created", { save = game.save })
+World.poisonFaintScript(world, { fainted = { 1 }, whiteout = true })
+eq(saved.nuzlocke_game_over, true,
+  "terminal poison wipe records game over")
+eq(#pushedScreens, 0,
+  "poison game over waits for its asynchronous whiteout")
+emit("map.entered", { mapId = "NEW_BARK_TOWN", via = "warp" })
+eq(#pushedScreens, 1,
+  "poison game over opens after the whiteout warp")
 
 print(("permadeath: %d checks passed"):format(checks))

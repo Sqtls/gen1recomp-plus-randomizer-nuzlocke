@@ -31,7 +31,10 @@ When `PERMADEATH` is enabled, a party Pokémon that faints after the run starts
 is removed when its battle finishes. Revives are refused without being spent.
 If the whole party dies, the first living non-Egg Pokémon in PC box order is
 withdrawn before the blackout respawn; fainted boxed Pokémon and Eggs are
-skipped. Overworld poison faints follow the same rule.
+skipped. If no eligible backup exists, the run ends on a non-dismissible
+`NUZLOCKE OVER` screen after the blackout respawn. Empty-party saves produced
+by v0.3.0 are repaired into the same rescue-or-game-over state when loaded.
+Overworld poison faints follow the same rule.
 
 ## Principles
 
