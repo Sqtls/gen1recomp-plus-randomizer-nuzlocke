@@ -5,11 +5,11 @@ in gen1recomp++, built one independently validated feature at a time.
 
 ## Status
 
-Strict first encounters, party permadeath, and failed-run reports are
-implemented.
+Strict first encounters, the dupes and shiny clauses, party permadeath, and
+failed-run reports are implemented.
 
-- Oak configures `1ST ENCOUNTER` and the `SKIP`/`LOSE` duplicate-family rule
-  for each new run.
+- Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE` duplicate-family rule, and
+  the shiny clause for each new run.
 - `START` → `NUZLOCKE` changes those settings for the active save.
 - The first eligible wild encounter reserves the whole named area. Catching it
   seals the area as caught; knocking it out, running, losing, or letting it flee
@@ -23,6 +23,9 @@ implemented.
   Ball pocket; wild encounters before that moment never consume an area.
 - Blocked balls show the recorded encounter outcome and return before the ball
   or turn is consumed, including on Gold v0.1.80.
+- With `SHINY CLAUSE` enabled, a shiny bypasses used and failed route limits as
+  well as both dupes modes. Catching or leaving it never consumes, repairs, or
+  replaces the area's normal encounter record.
 
 Gold v0.1.80 lacks public hooks at several required enforcement boundaries, so
 this version uses `engine_internals` for Gold's ball use, battle finish, and

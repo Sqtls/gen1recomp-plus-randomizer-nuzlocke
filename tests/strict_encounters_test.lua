@@ -121,7 +121,8 @@ local intro = introHook(function(steps) return steps end, {
 eq(intro[2].saveKey, "strict_encounters",
   "Oak asks whether strict encounters are enabled")
 eq(intro[3].saveKey, "dupes_mode", "Oak asks for duplicate policy")
-eq(intro[4].saveKey, "permadeath", "Oak asks whether permadeath is enabled")
+eq(intro[4].saveKey, "shiny_clause", "Oak asks whether shinies are exempt")
+eq(intro[5].saveKey, "permadeath", "Oak asks whether permadeath is enabled")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -129,10 +130,14 @@ h:emit("intro.oak_speech.answered", {
   saveKey = "dupes_mode", value = "skip",
 })
 h:emit("intro.oak_speech.answered", {
+  saveKey = "shiny_clause", value = true,
+})
+h:emit("intro.oak_speech.answered", {
   saveKey = "permadeath", value = true,
 })
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
+eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
 eq(h.save.permadeath, true, "new-run permadeath setting is persisted")
 
 local game = {}
@@ -155,10 +160,15 @@ settings.opts.onChoose(settings.items[1], settings)
 eq(h.save.strict_encounters, true,
   "active save can re-enable strict encounters in-game")
 eq(settings.items[2].right, "SKIP", "active settings show duplicate policy")
-eq(settings.items[3].right, "ON", "active settings show permadeath")
+eq(settings.items[3].right, "ON", "active settings show shiny clause")
 settings.opts.onChoose(settings.items[3], settings)
+eq(h.save.shiny_clause, false, "active save can disable shiny clause")
+settings.opts.onChoose(settings.items[3], settings)
+eq(h.save.shiny_clause, true, "active save can re-enable shiny clause")
+eq(settings.items[4].right, "ON", "active settings show permadeath")
+settings.opts.onChoose(settings.items[4], settings)
 eq(h.save.permadeath, false, "active save can disable permadeath in-game")
-settings.opts.onChoose(settings.items[3], settings)
+settings.opts.onChoose(settings.items[4], settings)
 eq(h.save.permadeath, true, "active save can re-enable permadeath in-game")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
@@ -230,6 +240,20 @@ eq(allowed, false, "later catches in the failed area are blocked")
 eq(delegated, false, "blocked catch does not consume a ball or turn")
 eq(denial, "SENTRET was defeated.\nEncounter failed!",
   "blocked catch explains which encounter was defeated")
+local shinyOnFailedRoute = {
+  wild = true,
+  enemy = { species = "HOOTHOOT", shiny = true },
+}
+h:emit("battle.started", {
+  battle = shinyOnFailedRoute, kind = "wild", species = "HOOTHOOT",
+})
+allowed = catchHook(function() return true end, {
+  game = game, battle = shinyOnFailedRoute, species = "HOOTHOOT",
+})
+eq(allowed, true, "shiny bypasses an already-failed route")
+h:emit("battle.ended", { battle = shinyOnFailedRoute, result = "run" })
+eq(h.save.encounter_areas["LANDMARK:16"].status, "failed",
+  "shiny encounter does not repair or replace a failed route record")
 
 -- A failed ball keeps the same encounter alive; only a successful catch seals
 -- the area as caught and blocks future battles there.
@@ -300,6 +324,71 @@ eq(blockedScreen.message, "Already caught\nSENTRET here!",
   "blocked ball explains the recorded catch")
 h:emit("battle.ended", { battle = blockedBattle, result = "run" })
 
+local shinyOnCaughtRoute = {
+  wild = true,
+  enemy = { species = "HOOTHOOT", shiny = true },
+}
+h:emit("battle.started", {
+  battle = shinyOnCaughtRoute, kind = "wild", species = "HOOTHOOT",
+})
+shinyOnCaughtRoute.enemy.shiny = false
+delegated = false
+allowed = catchHook(function()
+  delegated = true
+  return true
+end, { game = game, battle = shinyOnCaughtRoute, species = "HOOTHOOT" })
+eq(allowed, true, "original shiny bypasses a route after Transform changes it")
+eq(delegated, true, "shiny catch delegates to Gold's normal ball path")
+eq(h.save.encounter_areas["LANDMARK:17"].species, "SENTRET",
+  "shiny encounter does not replace the route's normal catch record")
+delegated = false
+caught, rate = rateHook(function()
+  delegated = true
+  return false, 77
+end, "FAST_BALL", shinyOnCaughtRoute.enemy, nil,
+  { battle = shinyOnCaughtRoute })
+eq(rate, 77, "shiny preserves Gold v0.1.80's calculated catch rate")
+eq(delegated, true, "shiny bypasses the v0.1.80 catch-rate denial")
+local shinyScreen = {
+  game = game,
+  save = { inventory = { FAST_BALL = 2 } },
+  battle = shinyOnCaughtRoute,
+  phase = "menu",
+}
+legacyBattleState.useItem(shinyScreen, "FAST_BALL")
+eq(shinyScreen.save.inventory.FAST_BALL, 1,
+  "v0.1.80 allows a ball to be thrown at the shiny")
+eq(shinyScreen.usedItem, "FAST_BALL",
+  "shiny reaches the original v0.1.80 item-use path")
+settings.opts.onChoose(settings.items[3], settings)
+allowed = catchHook(function() return true end, {
+  game = game, battle = shinyOnCaughtRoute, species = "HOOTHOOT",
+})
+eq(allowed, false, "disabled shiny clause restores the route limit")
+settings.opts.onChoose(settings.items[3], settings)
+allowed = catchHook(function() return true end, {
+  game = game, battle = shinyOnCaughtRoute, species = "HOOTHOOT",
+})
+eq(allowed, true, "re-enabled shiny clause immediately restores exemption")
+h:emit("battle.ended", { battle = shinyOnCaughtRoute, result = "run" })
+eq(h.save.encounter_areas["LANDMARK:17"].status, "caught",
+  "leaving a shiny encounter does not alter the used route")
+
+local transformedNormal = {
+  wild = true,
+  enemy = { species = "DITTO", shiny = false },
+}
+h:emit("battle.started", {
+  battle = transformedNormal, kind = "wild", species = "DITTO",
+})
+transformedNormal.enemy.shiny = true
+allowed = catchHook(function() return true end, {
+  game = game, battle = transformedNormal, species = "DITTO",
+})
+eq(allowed, false,
+  "normal encounter cannot gain shiny exemption by Transforming")
+h:emit("battle.ended", { battle = transformedNormal, result = "run" })
+
 -- Dupes checks the complete evolution family and remembers catches even if
 -- that Pokemon later leaves the party. SKIP preserves the route but forbids
 -- catching the duplicate; LOSE burns it immediately.
@@ -322,6 +411,25 @@ eq(h.save.encounter_areas["LANDMARK:18"], nil,
 
 settings.opts.onChoose(settings.items[2], settings)
 eq(h.save.dupes_mode, "lose", "duplicate policy can be changed to LOSE")
+h:setMap("ROUTE_31")
+local shinyDupe = {
+  wild = true,
+  enemy = { species = "FURRET", shiny = true },
+}
+h:emit("battle.started", {
+  battle = shinyDupe, kind = "wild", species = "FURRET",
+})
+eq(h.save.encounter_areas["LANDMARK:18"], nil,
+  "shiny duplicate bypasses LOSE without consuming the route")
+allowed = catchHook(function() return true end, {
+  game = game, battle = shinyDupe, species = "FURRET",
+})
+eq(allowed, true, "shiny duplicate can be caught under DUPES=LOSE")
+h:emit("pokemon.caught", {
+  game = game, battle = shinyDupe, species = "FURRET",
+})
+eq(h.save.encounter_areas["LANDMARK:18"], nil,
+  "caught shiny duplicate still leaves the normal encounter available")
 h:setMap("ROUTE_32")
 local lostDupe = { wild = true, enemy = { species = "FURRET" } }
 h:emit("battle.started", {

@@ -19,6 +19,6 @@ return function(mod)
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "strict-first-encounters-permadeath-and-run-reports",
+    status = "strict-encounters-shiny-clause-permadeath-and-run-reports",
   }
 end
