@@ -344,19 +344,7 @@ function StrictEncounters.install(mod)
 
   local function ownsFamily(game, species)
     local members = family(game and game.data, species)
-    for _, area in pairs(ledger()) do
-      if area.status == "caught" and members[area.species] then return true end
-    end
-    local save = game and game.save or {}
-    for _, mon in ipairs(save.party or {}) do
-      if mon and members[mon.species] then return true end
-    end
-    for _, box in pairs(save.boxes or {}) do
-      for _, mon in ipairs(box) do
-        if mon and members[mon.species] then return true end
-      end
-    end
-    return false
+    return mod.exports.ownershipHistory.ownsFamily(game, members)
   end
 
   mod.events:on("battle.started", function(ev)

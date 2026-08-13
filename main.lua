@@ -12,6 +12,7 @@ return function(mod)
     feature.install(mod)
   end
 
+  install("features/ownership_history.lua")
   install("features/strict_encounters.lua")
   install("features/run_report.lua")
   install("features/permadeath.lua")
@@ -26,6 +27,6 @@ return function(mod)
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "strict-encounters-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
+    status = "strict-encounters-permanent-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
   }
 end

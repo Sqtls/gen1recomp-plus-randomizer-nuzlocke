@@ -328,6 +328,9 @@ game.data = {
     FURRET = { evolutions = {} },
     HOOTHOOT = { evolutions = { { species = "NOCTOWL" } } },
     NOCTOWL = { evolutions = {} },
+    ABRA = { evolutions = { { species = "KADABRA" } } },
+    KADABRA = { evolutions = { { species = "ALAKAZAM" } } },
+    ALAKAZAM = { evolutions = {} },
   },
 }
 mod.game = game
@@ -802,6 +805,26 @@ eq(h.save.encounter_areas["LANDMARK:18"].status, "caught",
   "catching a duplicate with the clause OFF consumes the area normally")
 settings.opts.onChoose(settings.items[2], settings)
 eq(h.save.dupes_mode, "skip", "duplicate policy cycles from OFF to SKIP")
+
+-- Bonus acquisitions do not have an area record. Their evolution family must
+-- remain duplicate-locked even after the Pokemon leaves every live storage.
+h:emit("pokemon.received", { mon = { species = "ABRA" }, from = "link" })
+h:setMap("ROUTE_39")
+local receivedFamilyDupe = {
+  wild = true, enemy = { species = "KADABRA" },
+}
+h:emit("battle.started", {
+  battle = receivedFamilyDupe, kind = "wild", species = "KADABRA",
+})
+eq(h.save.encounter_areas["LANDMARK:26"], nil,
+  "a released bonus Pokemon still skips its evolution family")
+allowed, denial = catchHook(function() return true end, {
+  game = game, battle = receivedFamilyDupe, species = "KADABRA",
+})
+eq(allowed, false, "permanent ownership blocks the released family")
+eq(denial:lower():find("duplicate", 1, true) ~= nil, true,
+  "permanent family denial identifies a duplicate")
+h:emit("battle.ended", { battle = receivedFamilyDupe, result = "run" })
 
 -- Every way to leave an eligible encounter without catching it consumes the
 -- area. Gold reports an enemy escape as "fled" and a whiteout as "lose".
