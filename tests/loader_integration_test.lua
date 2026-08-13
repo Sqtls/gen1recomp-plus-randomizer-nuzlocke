@@ -50,6 +50,8 @@ assert(hooks:depth("trainer.party") == 1,
   "loaded mod must scale trainer rosters through the public hook")
 assert(hooks:depth("ui.options.rows") == 1,
   "loaded mod must lock Gold's Battle Style option")
+assert(hooks:depth("script.command") == 1,
+  "loaded mod must detect scripted static encounter origins")
 
 local nicknameRequired, nicknameDefault = run.loader.hooks:call(
   "pokemon.nickname", function() return false, "CYNDAQUIL" end,
@@ -205,6 +207,28 @@ assert(bucket and bucket.nuzlocke_started == true,
   "receiving any Ball must permanently start the Nuzlocke")
 game.save.inventory.FAST_BALL = nil
 
+bucket.static_encounters = "bonus"
+run.loader.hooks:call("script.command", function() end,
+  { generation = 2 }, "loadwildmon", {}, {
+    op = "loadwildmon", species = "SENTRET", level = 5,
+  })
+local staticBonus = { wild = true, enemy = { species = "SENTRET" } }
+run.loader.events:emit("battle.started", {
+  battle = staticBonus, kind = "wild", species = "SENTRET",
+})
+local staticAllowed = run.loader.hooks:call("battle.catch_allowed",
+  function() return true end,
+  { game = game, battle = staticBonus, species = "SENTRET" })
+assert(staticAllowed == true,
+  "production static BONUS policy must allow the scripted catch")
+run.loader.events:emit("pokemon.caught", {
+  battle = staticBonus, game = game, species = "SENTRET",
+})
+assert(not bucket.encounter_areas
+    or not bucket.encounter_areas["LANDMARK:16"],
+  "production static BONUS policy must preserve the surrounding area")
+bucket.static_encounters = "area"
+
 bucket.no_battle_items = true
 game.save.inventory.POTION = 2
 local itemScreen = { game = game, save = game.save, phase = "menu" }
@@ -228,10 +252,10 @@ local areas = bucket and bucket.encounter_areas
 assert(areas and areas["LANDMARK:16"]
     and areas["LANDMARK:16"].status == "caught",
   "first catch must consume the landmark encounter")
-assert(bucket.run_catches and #bucket.run_catches == 1,
+assert(bucket.run_catches and #bucket.run_catches == 2,
   "production mod.save must persist the catch journal")
-assert(bucket.run_catches[1].species == "SENTRET"
-    and bucket.run_catches[1].location == "ROUTE 29",
+assert(bucket.run_catches[2].species == "SENTRET"
+    and bucket.run_catches[2].location == "ROUTE 29",
   "catch journal must retain species and Gold location")
 
 local second = { wild = true, enemy = { species = "HOOTHOOT" } }
@@ -362,4 +386,4 @@ assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
   "rescued Pokemon must leave its box without reordering the rest")
 
 run.release()
-print("production loader integration: 29 checks passed")
+print("production loader integration: 32 checks passed")
