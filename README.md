@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.15.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.16.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -44,7 +44,7 @@ scaled, and a failed run ends with a complete run report.
 | Feature | What it does |
 | --- | --- |
 | Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
-| Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy. |
+| Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy, using every species ever owned during the run. |
 | Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
 | Roaming encounters | Tracks each roaming slot across routes until that Pokémon is caught or defeated. |
 | Permadeath | Removes fainted party Pokémon and refuses Revives. |
@@ -342,7 +342,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.15.0 |
+| Current mod version | 0.16.0 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly

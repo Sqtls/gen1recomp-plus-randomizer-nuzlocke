@@ -13,6 +13,8 @@ end
 local files = {
   ["mods/strict/manifest.json"] = read("manifest.json"),
   ["mods/strict/main.lua"] = read("main.lua"),
+  ["mods/strict/features/ownership_history.lua"] =
+    read("features/ownership_history.lua"),
   ["mods/strict/features/strict_encounters.lua"] =
     read("features/strict_encounters.lua"),
   ["mods/strict/features/permadeath.lua"] = read("features/permadeath.lua"),
@@ -214,11 +216,11 @@ game.save.inventory.FAST_BALL = nil
 bucket.static_encounters = "bonus"
 run.loader.hooks:call("script.command", function() end,
   { generation = 2 }, "loadwildmon", {}, {
-    op = "loadwildmon", species = "SENTRET", level = 5,
+    op = "loadwildmon", species = "HOOTHOOT", level = 5,
   })
-local staticBonus = { wild = true, enemy = { species = "SENTRET" } }
+local staticBonus = { wild = true, enemy = { species = "HOOTHOOT" } }
 run.loader.events:emit("battle.started", {
-  battle = staticBonus, kind = "wild", species = "SENTRET",
+  battle = staticBonus, kind = "wild", species = "HOOTHOOT",
 })
 local staticAllowed = run.loader.hooks:call("battle.catch_allowed",
   function() return true end,
@@ -226,7 +228,7 @@ local staticAllowed = run.loader.hooks:call("battle.catch_allowed",
 assert(staticAllowed == true,
   "production static BONUS policy must allow the scripted catch")
 run.loader.events:emit("pokemon.caught", {
-  battle = staticBonus, game = game, species = "SENTRET",
+  battle = staticBonus, game = game, species = "HOOTHOOT",
 })
 assert(not bucket.encounter_areas
     or not bucket.encounter_areas["LANDMARK:16"],
