@@ -8,6 +8,7 @@ local function setting(mod, key, default)
 end
 
 function Permadeath.install(mod)
+  local Breeding = require("src.core.gen2.Breeding")
   local deaths = setmetatable({}, { __mode = "k" })
   local shown = setmetatable({}, { __mode = "k" })
   local deferred = setmetatable({}, { __mode = "k" })
@@ -105,6 +106,20 @@ function Permadeath.install(mod)
           save.party[1] = table.remove(box, slot)
           return "rescued"
         end
+      end
+    end
+    local dayCare = save.dayCare
+    for _, side in ipairs({ "man", "lady" }) do
+      local slot = dayCare and dayCare[side]
+      if slot and slot.mon then
+        save.player = save.player or {}
+        local money = save.player.money or 0
+        local _, _, price = Breeding.canWithdraw(game.data, save, side)
+        save.player.money = math.max(money, price or 0)
+        local before = #save.party
+        local ok = Breeding.withdraw(game.data, save, side)
+        save.player.money = money
+        if ok and #save.party > before then return "rescued" end
       end
     end
     mod.save:set("nuzlocke_game_over", true)
