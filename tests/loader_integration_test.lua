@@ -131,6 +131,31 @@ assert(screen.message == "Already caught\nSENTRET here!",
 assert(screen.phase == "resolving",
   "blocked ball message must enter the normal battle message phase")
 
+local shiny = {
+  wild = true,
+  enemy = { species = "HOOTHOOT", shiny = true },
+}
+run.loader.events:emit("battle.started", {
+  battle = shiny, kind = "wild", species = "HOOTHOOT",
+})
+allowed = run.loader.hooks:call("battle.catch_allowed",
+  function() return true end,
+  { game = game, battle = shiny, species = "HOOTHOOT" })
+assert(allowed == true,
+  "production loader must allow a shiny on an already-used landmark")
+local shinyCaught = Catching.attempt({
+  ball = "MASTER_BALL", species = "HOOTHOOT",
+  maxHp = 20, hp = 20, catchRate = 255,
+})
+assert(shinyCaught == true,
+  "Gold v0.1.80 catch-rate fallback must allow the shiny")
+run.loader.events:emit("pokemon.caught", {
+  battle = shiny, game = game, species = "HOOTHOOT",
+})
+assert(areas["LANDMARK:16"].species == "SENTRET"
+    and areas["LANDMARK:16"].status == "caught",
+  "shiny catch must not replace the landmark's normal encounter record")
+
 local deadOne = { species = "SENTRET", nickname = "SCOUT", level = 8, hp = 0 }
 local deadTwo = { species = "HOOTHOOT", level = 7, hp = 0 }
 local backup = { species = "RATTATA", level = 6, hp = 13 }
@@ -178,4 +203,4 @@ assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
   "rescued Pokemon must leave its box without reordering the rest")
 
 run.release()
-print("production loader integration: 23 checks passed")
+print("production loader integration: 26 checks passed")

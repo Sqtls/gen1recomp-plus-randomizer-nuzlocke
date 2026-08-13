@@ -13,6 +13,7 @@ function StrictEncounters.install(mod)
       local items = {
         { label = "1ST ENCOUNTER", value = "strict_encounters" },
         { label = "DUPES", value = "dupes_mode" },
+        { label = "SHINY CLAUSE", value = "shiny_clause" },
         { label = "PERMADEATH", value = "permadeath" },
         { label = "DONE", value = "done" },
       }
@@ -20,7 +21,8 @@ function StrictEncounters.install(mod)
         items[1].right = setting(mod, "strict_encounters", true)
           and "ON" or "OFF"
         items[2].right = setting(mod, "dupes_mode", "skip"):upper()
-        items[3].right = setting(mod, "permadeath", true) and "ON" or "OFF"
+        items[3].right = setting(mod, "shiny_clause", true) and "ON" or "OFF"
+        items[4].right = setting(mod, "permadeath", true) and "ON" or "OFF"
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -34,6 +36,9 @@ function StrictEncounters.install(mod)
             mod.save:set("dupes_mode",
               setting(mod, "dupes_mode", "skip") == "skip"
                 and "lose" or "skip")
+          elseif item.value == "shiny_clause" then
+            mod.save:set("shiny_clause",
+              not setting(mod, "shiny_clause", true))
           elseif item.value == "permadeath" then
             mod.save:set("permadeath", not setting(mod, "permadeath", true))
           elseif item.value == "done" then
@@ -60,6 +65,12 @@ function StrictEncounters.install(mod)
       choices = { "SKIP", "LOSE" }, values = { "skip", "lose" },
     })
     mod.ui.insertStepAfter(result, "plus_dupes_mode", {
+      id = "plus_shiny_clause", kind = "choice", pic = "oak",
+      saveKey = "shiny_clause",
+      text = "Allow any shiny\nPOK\195\169MON to be\ncaught?",
+      choices = { "ON", "OFF" }, values = { true, false },
+    })
+    mod.ui.insertStepAfter(result, "plus_shiny_clause", {
       id = "plus_permadeath", kind = "choice", pic = "oak",
       saveKey = "permadeath", text = "Permanently lose\nfainted POK\195\169MON?",
       choices = { "ON", "OFF" }, values = { true, false },
@@ -69,7 +80,8 @@ function StrictEncounters.install(mod)
 
   mod.events:on("intro.oak_speech.answered", function(ev)
     if ev and (ev.saveKey == "strict_encounters"
-        or ev.saveKey == "dupes_mode" or ev.saveKey == "permadeath") then
+        or ev.saveKey == "dupes_mode" or ev.saveKey == "shiny_clause"
+        or ev.saveKey == "permadeath") then
       mod.save:set(ev.saveKey, ev.value)
     end
   end)
@@ -163,6 +175,15 @@ function StrictEncounters.install(mod)
       and not battle.tutorial and battleType ~= 3 and not contest
   end
 
+  local function shiny(battle, mon)
+    if setting(mod, "shiny_clause", true) ~= true then return false end
+    local function marked(candidate)
+      candidate = candidate and (candidate.mon or candidate)
+      return candidate ~= nil and candidate.shiny == true
+    end
+    return marked(mon) or marked(battle and battle.enemy)
+  end
+
   local function family(data, species)
     local members = {}
     local pending = { species }
@@ -208,6 +229,7 @@ function StrictEncounters.install(mod)
         or not eligibleBattle(battle, game, ev) then return end
 
     activeBattle = battle
+    if shiny(battle) then return end
     local key, mapId = canonicalArea(game)
     local existing = ledger()[key]
     local species = ev.species or battle.enemy and battle.enemy.species
@@ -259,8 +281,9 @@ function StrictEncounters.install(mod)
     end
   end)
 
-  local function captureDenial(game, battle)
+  local function captureDenial(game, battle, mon)
     if not enabled(game) or not eligibleBattle(battle, game) then return nil end
+    if shiny(battle, mon) then return nil end
     local key = canonicalArea(game)
     local state = ledger()[key]
     local current = battles[battle]
@@ -292,7 +315,7 @@ function StrictEncounters.install(mod)
 
   mod.hooks:wrap("battle.catch_allowed", function(next, ctx)
     local game = ctx and ctx.game or mod.game
-    local denial = captureDenial(game, ctx and ctx.battle)
+    local denial = captureDenial(game, ctx and ctx.battle, ctx and ctx.mon)
     if denial then return false, denial end
     return next(ctx)
   end, 1000)
@@ -302,7 +325,7 @@ function StrictEncounters.install(mod)
   -- newer builds stop at the pre-throw hook above and never reach this one.
   mod.hooks:wrap("catch.rate", function(next, ball, mon, def, opts)
     local battle = opts and opts.battle or activeBattle
-    if captureDenial(mod.game, battle) then return false, 0 end
+    if captureDenial(mod.game, battle, mon) then return false, 0 end
     return next(ball, mon, def, opts)
   end, 1000)
 
