@@ -53,9 +53,10 @@ function StrictEncounters.install(mod)
             mod.save:set("strict_encounters",
               not setting(mod, "strict_encounters", true))
           elseif item.value == "dupes_mode" then
+            local current = setting(mod, "dupes_mode", "skip")
             mod.save:set("dupes_mode",
-              setting(mod, "dupes_mode", "skip") == "skip"
-                and "lose" or "skip")
+              ({ skip = "lose", lose = "off", off = "skip" })[current]
+                or "skip")
           elseif item.value == "shiny_clause" then
             mod.save:set("shiny_clause",
               not setting(mod, "shiny_clause", true))
@@ -98,7 +99,8 @@ function StrictEncounters.install(mod)
     mod.ui.insertStepAfter(result, "plus_strict_encounters", {
       id = "plus_dupes_mode", kind = "choice", pic = "oak",
       saveKey = "dupes_mode", text = "When the first one\nis a duplicate?",
-      choices = { "SKIP", "LOSE" }, values = { "skip", "lose" },
+      choices = { "SKIP", "LOSE", "OFF" },
+      values = { "skip", "lose", "off" },
     })
     mod.ui.insertStepAfter(result, "plus_dupes_mode", {
       id = "plus_shiny_clause", kind = "choice", pic = "oak",
@@ -314,8 +316,8 @@ function StrictEncounters.install(mod)
     battles[battle] = { key = key, species = species }
     if existing then return end
 
-    if ownsFamily(game, species) then
-      local mode = setting(mod, "dupes_mode", "skip")
+    local mode = setting(mod, "dupes_mode", "skip")
+    if mode ~= "off" and ownsFamily(game, species) then
       battles[battle].duplicate = mode
       if mode == "lose" then
         writeArea(key, {

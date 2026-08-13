@@ -128,6 +128,7 @@ local intro = introHook(function(steps) return steps end, {
 eq(intro[2].saveKey, "strict_encounters",
   "Oak asks whether strict encounters are enabled")
 eq(intro[3].saveKey, "dupes_mode", "Oak asks for duplicate policy")
+eq(intro[3].choices[3], "OFF", "Oak can disable the duplicate clause")
 eq(intro[4].saveKey, "shiny_clause", "Oak asks whether shinies are exempt")
 eq(intro[5].saveKey, "permadeath", "Oak asks whether permadeath is enabled")
 eq(intro[6].saveKey, "mandatory_nicknames",
@@ -514,6 +515,28 @@ h:emit("battle.started", {
 })
 eq(h.save.encounter_areas["LANDMARK:19"].status, "failed",
   "LOSE family duplicate immediately burns the route")
+
+settings.opts.onChoose(settings.items[2], settings)
+eq(h.save.dupes_mode, "off", "duplicate clause can be disabled")
+eq(settings.items[2].right, "OFF", "disabled duplicate clause shows as off")
+h:setMap("ROUTE_31")
+local allowedDupe = { wild = true, enemy = { species = "FURRET" } }
+h:emit("battle.started", {
+  battle = allowedDupe, kind = "wild", species = "FURRET",
+})
+eq(h.save.encounter_areas["LANDMARK:18"].status, "active",
+  "OFF treats an evolution-family duplicate as the area's encounter")
+allowed = catchHook(function() return true end, {
+  game = game, battle = allowedDupe, species = "FURRET",
+})
+eq(allowed, true, "OFF allows an evolution-family duplicate to be caught")
+h:emit("pokemon.caught", {
+  game = game, battle = allowedDupe, species = "FURRET",
+})
+eq(h.save.encounter_areas["LANDMARK:18"].status, "caught",
+  "catching a duplicate with the clause OFF consumes the area normally")
+settings.opts.onChoose(settings.items[2], settings)
+eq(h.save.dupes_mode, "skip", "duplicate policy cycles from OFF to SKIP")
 
 -- Every way to leave an eligible encounter without catching it consumes the
 -- area. Gold reports an enemy escape as "fled" and a whiteout as "lose".
