@@ -130,6 +130,8 @@ eq(intro[4].saveKey, "shiny_clause", "Oak asks whether shinies are exempt")
 eq(intro[5].saveKey, "permadeath", "Oak asks whether permadeath is enabled")
 eq(intro[6].saveKey, "mandatory_nicknames",
   "Oak asks whether nicknames are mandatory")
+eq(intro[7].saveKey, "level_caps",
+  "Oak asks whether level caps are enabled")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -145,12 +147,16 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "mandatory_nicknames", value = true,
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "level_caps", value = true,
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
 eq(h.save.permadeath, true, "new-run permadeath setting is persisted")
 eq(h.save.mandatory_nicknames, true,
   "new-run mandatory nickname setting is persisted")
+eq(h.save.level_caps, true, "new-run level cap setting is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -189,6 +195,13 @@ eq(h.save.mandatory_nicknames, false,
 settings.opts.onChoose(settings.items[5], settings)
 eq(h.save.mandatory_nicknames, true,
   "active save can re-enable mandatory names in-game")
+eq(settings.items[6].right, "ON/9",
+  "active settings show enabled state and current cap")
+settings.opts.onChoose(settings.items[6], settings)
+eq(h.save.level_caps, false, "active save can disable level caps in-game")
+eq(settings.items[6].right, "OFF", "disabled level caps show as off")
+settings.opts.onChoose(settings.items[6], settings)
+eq(h.save.level_caps, true, "active save can re-enable level caps in-game")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.

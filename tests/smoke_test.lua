@@ -43,7 +43,7 @@ install(mod)
 assert(mod.exports.project.generation == 2, "project must target Gen 2")
 assert(mod.exports.project.game == "gold", "project must target Gold")
 assert(mod.exports.project.status
-    == "strict-encounters-shiny-clause-permadeath-run-reports-and-mandatory-nicknames",
+    == "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-and-level-caps",
   "project must report its active feature set")
 
 print("project smoke test: 3 checks passed")

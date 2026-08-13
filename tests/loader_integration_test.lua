@@ -19,6 +19,7 @@ local files = {
   ["mods/strict/features/run_report.lua"] = read("features/run_report.lua"),
   ["mods/strict/features/mandatory_nicknames.lua"] =
     read("features/mandatory_nicknames.lua"),
+  ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -38,6 +39,8 @@ assert(hooks:depth("input.step") == 1,
   "loaded mod must watch for the first Ball acquisition")
 assert(hooks:depth("pokemon.nickname") == 1,
   "loaded mod must require names for catches and scripted gifts")
+assert(hooks:depth("exp.gain") == 1,
+  "loaded mod must enforce battle EXP level caps")
 
 local nicknameRequired, nicknameDefault = run.loader.hooks:call(
   "pokemon.nickname", function() return false, "CYNDAQUIL" end,
@@ -85,14 +88,24 @@ local game = {
       FAST_BALL = { pocket = "BALL" },
     },
     pokemon = {
-      SENTRET = { evolutions = {} },
-      HOOTHOOT = { evolutions = {} },
+      SENTRET = { evolutions = {}, growthRate = "MEDIUM_FAST" },
+      HOOTHOOT = { evolutions = {}, growthRate = "MEDIUM_FAST" },
     },
   },
   save = { party = {}, boxes = {}, inventory = {} },
   world = { map = { id = "ROUTE_29" }, player = {} },
 }
 run.loader.game = game
+
+local exports = run.loader.exports.gen1recomp_plus_randomizer_nuzlocke
+local activeCap, capTarget = exports.levelCaps.current(game)
+assert(activeCap == 9 and capTarget == "FALKNER",
+  "production loader must expose the new-run cap for future scaling")
+local ItemEffects = require("src.core.gen2.ItemEffects")
+local cappedCandy = ItemEffects.useOnMon(
+  "RARE_CANDY", { species = "SENTRET", level = 9 }, game.data)
+assert(cappedCandy.used == false,
+  "production Gold Rare Candy path must refuse at the active cap")
 
 local menu = run.loader.hooks:call("ui.start_menu.items",
   function(_, items) return items end, game,
