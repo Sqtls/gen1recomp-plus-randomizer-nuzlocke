@@ -17,21 +17,49 @@ function MandatoryNicknames.install(mod)
   local NamingScreen = require("src.ui.gen2.NamingScreen")
   local newNamingScreen = NamingScreen.new
   local acceptName = NamingScreen.accept
-  assert(type(newNamingScreen) == "function" and type(acceptName) == "function",
+  local addCharacter = NamingScreen.addCharacter
+  local deleteCharacter = NamingScreen.deleteCharacter
+  assert(type(newNamingScreen) == "function" and type(acceptName) == "function"
+      and type(addCharacter) == "function" and type(deleteCharacter) == "function",
     "Gold NamingScreen nickname enforcement is unavailable; update this mod")
 
   NamingScreen.new = function(game, opts)
     local screen = newNamingScreen(game, opts)
     if enabled() and opts and opts.type == "nickname" then
       screen.nuzlockeNicknameRequired = true
+      screen.nuzlockeNicknameMonName = screen.monName
+      screen.nuzlockeNicknamePrompt = screen.prompt
     end
     return screen
+  end
+
+  local function clearError(screen)
+    if not screen.nuzlockeNicknameError then return end
+    screen.nuzlockeNicknameError = nil
+    screen.monName = screen.nuzlockeNicknameMonName
+    screen.prompt = screen.nuzlockeNicknamePrompt
+  end
+
+  NamingScreen.addCharacter = function(screen, ...)
+    clearError(screen)
+    return addCharacter(screen, ...)
+  end
+
+  NamingScreen.deleteCharacter = function(screen, ...)
+    clearError(screen)
+    return deleteCharacter(screen, ...)
   end
 
   NamingScreen.accept = function(screen, ...)
     if screen.nuzlockeNicknameRequired then
       local entered = normalized(screen.text)
-      if entered == "" or entered == normalized(screen.monName) then return end
+      local species = normalized(screen.nuzlockeNicknameMonName or screen.monName)
+      if entered == "" or entered == species then
+        screen.nuzlockeNicknameError = true
+        screen.monName = nil
+        screen.prompt = entered == "" and "NAME REQUIRED!" or "CUSTOM NAME!"
+        return
+      end
     end
     return acceptName(screen, ...)
   end

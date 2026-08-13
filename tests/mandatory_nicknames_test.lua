@@ -35,6 +35,12 @@ end
 function NamingScreen:accept()
   if self.onDone then self.onDone(self.text) end
 end
+function NamingScreen:addCharacter(character)
+  self.text = self.text .. character
+end
+function NamingScreen:deleteCharacter()
+  self.text = self.text:sub(1, -2)
+end
 
 local BattleState = {}
 function BattleState:askNickname(mon)
@@ -50,7 +56,7 @@ function World:load()
   self.game = { save = { party = {} } }
   self.vm = {
     givePokeFn = function()
-      self.game.save.party[1] = { species = "CYNDAQUIL" }
+      self.game.save.party[1] = { species = self.giftSpecies or "CYNDAQUIL" }
     end,
   }
 end
@@ -76,6 +82,7 @@ local feature = assert(loadfile(root .. "/features/mandatory_nicknames.lua"))()
 feature.install(mod)
 
 local legacyWorld = setmetatable({}, { __index = World })
+legacyWorld.giftSpecies = "LUGIA"
 legacyWorld:load()
 local starterFinished = false
 local starterFlow = coroutine.create(function()
@@ -89,8 +96,8 @@ legacyWorld.vm.resume = function(self)
 end
 local ok, err = coroutine.resume(starterFlow)
 assert(ok, err)
-eq(legacyWorld.renamedMon and legacyWorld.renamedMon.species, "CYNDAQUIL",
-  "legacy Gold starter path must open nickname entry")
+eq(legacyWorld.renamedMon and legacyWorld.renamedMon.species, "LUGIA",
+  "legacy Gold starter path must name the species actually received")
 eq(legacyWorld.renameOpts and legacyWorld.renameOpts.blank, true,
   "legacy starter nickname entry starts blank")
 eq(starterFinished, false, "legacy starter script waits for nickname entry")
@@ -130,10 +137,15 @@ local screen = NamingScreen.new({}, {
 screen.text = ""
 screen:accept()
 eq(completed, nil, "blank nickname cannot finish")
+eq(screen.prompt, "NAME REQUIRED!", "blank nickname explains the requirement")
 
 screen.text = "  Cyndaquil  "
 screen:accept()
 eq(completed, nil, "species default cannot finish")
+eq(screen.prompt, "CUSTOM NAME!", "default species name asks for a custom name")
+
+screen:addCharacter("X")
+eq(screen.monName, "CYNDAQUIL", "editing restores the Pokemon header")
 
 screen.text = "EMBER"
 screen:accept()

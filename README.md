@@ -30,7 +30,8 @@ failed-run reports, and mandatory nicknames are implemented.
   hatched Egg, and Bug-Catching Contest reward must receive a nonblank nickname
   different from its species name. Pre-nicknamed in-game trades already satisfy
   the rule. Oak and `START` → `NUZLOCKE` both expose the setting, which defaults
-  to ON.
+  to ON. Rejected blank and species-default entries show an inline explanation
+  and keep the naming screen open.
 
 Gold v0.1.80 is handled directly for starter/scripted-gift and wild-catch
 nickname flows because that build predates the public nickname hook call sites.
