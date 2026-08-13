@@ -19,6 +19,7 @@ local function newMod(savedValues)
 
   local mod = {
     id = "gen1recomp_plus_randomizer_nuzlocke",
+    path = root,
     exports = {},
     content = {
       screens = {
@@ -70,6 +71,12 @@ local function newMod(savedValues)
       push = function(_, id, opts) pushed = { id = id, opts = opts } end,
     },
   }
+  function mod:read(relative)
+    local file = assert(io.open(root .. "/" .. relative, "rb"))
+    local body = file:read("*a")
+    file:close()
+    return body
+  end
 
   local harness = {
     hooks = hookChains,

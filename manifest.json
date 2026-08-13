@@ -1,7 +1,7 @@
 {
   "id": "gen1recomp_plus_randomizer_nuzlocke",
   "name": "Gen1Recomp++ Randomizer Nuzlocke",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -13,7 +13,7 @@
   "conflicts": [],
   "incompatible": [],
   "games": ["gold"],
-  "experimental": true,
+  "experimental": false,
   "github": "Sqtls/gen1recomp-plus-randomizer-nuzlocke",
   "description": "An all-in-one Gold randomizer and strictly enforced Nuzlocke for gen1recomp++."
 }
