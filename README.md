@@ -5,7 +5,7 @@ in gen1recomp++, built one independently validated feature at a time.
 
 ## Status
 
-The first feature is strict first-encounter enforcement.
+Strict first encounters and party permadeath are implemented.
 
 - Oak configures `1ST ENCOUNTER` and the `SKIP`/`LOSE` duplicate-family rule
   for each new run.
@@ -23,8 +23,15 @@ The first feature is strict first-encounter enforcement.
 - Blocked balls show the recorded encounter outcome and return before the ball
   or turn is consumed, including on Gold v0.1.80.
 
-Gold v0.1.80 lacks a public hook before ball consumption, so this version uses
-the `engine_internals` permission solely to gate that Gold item-use boundary.
+Gold v0.1.80 lacks public hooks at several required enforcement boundaries, so
+this version uses `engine_internals` for Gold's ball use, battle finish, and
+overworld poison-faint paths.
+
+When `PERMADEATH` is enabled, a party Pokémon that faints after the run starts
+is removed when its battle finishes. Revives are refused without being spent.
+If the whole party dies, the first living non-Egg Pokémon in PC box order is
+withdrawn before the blackout respawn; fainted boxed Pokémon and Eggs are
+skipped. Overworld poison faints follow the same rule.
 
 ## Principles
 
@@ -39,6 +46,7 @@ From the gen1recomp++ repository root:
 
 ```sh
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/strict_encounters_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/permadeath_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
 python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture

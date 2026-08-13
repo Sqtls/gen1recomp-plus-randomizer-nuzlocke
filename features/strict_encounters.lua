@@ -13,12 +13,14 @@ function StrictEncounters.install(mod)
       local items = {
         { label = "1ST ENCOUNTER", value = "strict_encounters" },
         { label = "DUPES", value = "dupes_mode" },
+        { label = "PERMADEATH", value = "permadeath" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
         items[1].right = setting(mod, "strict_encounters", true)
           and "ON" or "OFF"
         items[2].right = setting(mod, "dupes_mode", "skip"):upper()
+        items[3].right = setting(mod, "permadeath", true) and "ON" or "OFF"
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -32,6 +34,8 @@ function StrictEncounters.install(mod)
             mod.save:set("dupes_mode",
               setting(mod, "dupes_mode", "skip") == "skip"
                 and "lose" or "skip")
+          elseif item.value == "permadeath" then
+            mod.save:set("permadeath", not setting(mod, "permadeath", true))
           elseif item.value == "done" then
             menu:close()
             return
@@ -55,12 +59,17 @@ function StrictEncounters.install(mod)
       saveKey = "dupes_mode", text = "When the first one\nis a duplicate?",
       choices = { "SKIP", "LOSE" }, values = { "skip", "lose" },
     })
+    mod.ui.insertStepAfter(result, "plus_dupes_mode", {
+      id = "plus_permadeath", kind = "choice", pic = "oak",
+      saveKey = "permadeath", text = "Permanently lose\nfainted POK\195\169MON?",
+      choices = { "ON", "OFF" }, values = { true, false },
+    })
     return result
   end)
 
   mod.events:on("intro.oak_speech.answered", function(ev)
     if ev and (ev.saveKey == "strict_encounters"
-        or ev.saveKey == "dupes_mode") then
+        or ev.saveKey == "dupes_mode" or ev.saveKey == "permadeath") then
       mod.save:set(ev.saveKey, ev.value)
     end
   end)
