@@ -6,8 +6,8 @@ in gen1recomp++, built one independently validated feature at a time.
 ## Status
 
 Strict first encounters, the dupes and shiny clauses, party permadeath,
-failed-run reports, mandatory nicknames, level caps, and level scaling are
-implemented, along with enforced Set battle mode.
+failed-run reports, mandatory nicknames, level caps, level scaling, enforced
+Set battle mode, and the optional no-battle-items challenge are implemented.
 
 - Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE` duplicate-family rule, and
   the shiny clause for each new run.
@@ -57,6 +57,10 @@ implemented, along with enforced Set battle mode.
   screen cannot select `SHIFT`, and defeating an opposing Pokémon never offers
   a free switch before the replacement appears. Disabling the rule restores
   normal `SHIFT`/`SET` control without changing the current selection.
+- With `NO BATTLE ITEMS` enabled, manually selected items are refused before
+  consumption or turn use. Poké Balls remain usable, held-item effects still
+  trigger normally, and item use outside battle is unchanged. This optional
+  challenge defaults to OFF and is configurable through Oak and `NUZLOCKE`.
 
 Gold v0.1.80 is handled directly for starter/scripted-gift and wild-catch
 nickname flows because that build predates the public nickname hook call sites.
@@ -107,6 +111,7 @@ luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/mandatory_nicknames_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_caps_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_scaling_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/forced_set_mode_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/no_battle_items_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
 python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture

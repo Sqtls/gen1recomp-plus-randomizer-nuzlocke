@@ -19,10 +19,11 @@ return function(mod)
   install("features/level_caps.lua")
   install("features/level_scaling.lua")
   install("features/forced_set_mode.lua")
+  install("features/no_battle_items.lua")
 
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-and-forced-set-mode",
+    status = "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
   }
 end

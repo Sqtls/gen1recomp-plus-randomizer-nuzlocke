@@ -23,6 +23,8 @@ local files = {
   ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
   ["mods/strict/features/forced_set_mode.lua"] =
     read("features/forced_set_mode.lua"),
+  ["mods/strict/features/no_battle_items.lua"] =
+    read("features/no_battle_items.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -93,6 +95,7 @@ local game = {
     items = {
       POKE_BALL = { pocket = "BALL" },
       FAST_BALL = { pocket = "BALL" },
+      POTION = { pocket = "ITEM" },
     },
     pokemon = {
       SENTRET = { evolutions = {}, growthRate = "MEDIUM_FAST",
@@ -201,6 +204,17 @@ bucket = run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke
 assert(bucket and bucket.nuzlocke_started == true,
   "receiving any Ball must permanently start the Nuzlocke")
 game.save.inventory.FAST_BALL = nil
+
+bucket.no_battle_items = true
+game.save.inventory.POTION = 2
+local itemScreen = { game = game, save = game.save, phase = "menu" }
+BattleState.useItem(itemScreen, "POTION")
+assert(game.save.inventory.POTION == 2,
+  "production battle-item rule must refuse before consuming the item")
+assert(itemScreen.message == "Only BALLS can be\nused in battle!"
+    and itemScreen.phase == "resolving",
+  "production battle-item refusal must explain the rule cleanly")
+bucket.no_battle_items = false
 
 local first = { wild = true, enemy = { species = "SENTRET" } }
 run.loader.events:emit("battle.started", {
@@ -348,4 +362,4 @@ assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
   "rescued Pokemon must leave its box without reordering the rest")
 
 run.release()
-print("production loader integration: 27 checks passed")
+print("production loader integration: 29 checks passed")

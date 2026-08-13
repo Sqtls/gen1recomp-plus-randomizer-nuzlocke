@@ -19,6 +19,7 @@ function StrictEncounters.install(mod)
         { label = "LEVEL CAPS", value = "level_caps" },
         { label = "LEVEL SCALING", value = "level_scaling" },
         { label = "SET MODE", value = "forced_set_mode" },
+        { label = "NO BATTLE ITEMS", value = "no_battle_items" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -39,6 +40,8 @@ function StrictEncounters.install(mod)
         items[7].right = setting(mod, "level_scaling", true)
           and "ON" or "OFF"
         items[8].right = setting(mod, "forced_set_mode", true)
+          and "ON" or "OFF"
+        items[9].right = setting(mod, "no_battle_items", false)
           and "ON" or "OFF"
       end
       refresh()
@@ -71,6 +74,9 @@ function StrictEncounters.install(mod)
             mod.save:set("forced_set_mode", value)
             local rule = mod.exports.forcedSetMode
             if value and rule then rule.force(game) end
+          elseif item.value == "no_battle_items" then
+            mod.save:set("no_battle_items",
+              not setting(mod, "no_battle_items", false))
           elseif item.value == "done" then
             menu:close()
             return
@@ -129,6 +135,12 @@ function StrictEncounters.install(mod)
       text = "Always use SET\nbattle mode?",
       choices = { "ON", "OFF" }, values = { true, false },
     })
+    mod.ui.insertStepAfter(result, "plus_forced_set_mode", {
+      id = "plus_no_battle_items", kind = "choice", pic = "oak",
+      saveKey = "no_battle_items",
+      text = "Forbid non-BALL\nitems in battle?",
+      choices = { "OFF", "ON" }, values = { false, true },
+    })
     return result
   end)
 
@@ -139,7 +151,8 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "mandatory_nicknames"
         or ev.saveKey == "level_caps"
         or ev.saveKey == "level_scaling"
-        or ev.saveKey == "forced_set_mode") then
+        or ev.saveKey == "forced_set_mode"
+        or ev.saveKey == "no_battle_items") then
       mod.save:set(ev.saveKey, ev.value)
       if ev.saveKey == "forced_set_mode" and ev.value == true then
         local rule = mod.exports.forcedSetMode

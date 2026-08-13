@@ -138,6 +138,8 @@ eq(intro[8].saveKey, "level_scaling",
   "Oak asks whether level scaling is enabled")
 eq(intro[9].saveKey, "forced_set_mode",
   "Oak asks whether Set mode is enforced")
+eq(intro[10].saveKey, "no_battle_items",
+  "Oak asks whether non-ball battle items are forbidden")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -162,6 +164,9 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "forced_set_mode", value = true,
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "no_battle_items", value = false,
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -171,6 +176,8 @@ eq(h.save.mandatory_nicknames, true,
 eq(h.save.level_caps, true, "new-run level cap setting is persisted")
 eq(h.save.level_scaling, true, "new-run level scaling setting is persisted")
 eq(h.save.forced_set_mode, true, "new-run Set-mode setting is persisted")
+eq(h.save.no_battle_items, false,
+  "new-run battle-item setting is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -232,6 +239,14 @@ eq(settings.items[8].right, "OFF", "disabled forced Set mode shows as off")
 settings.opts.onChoose(settings.items[8], settings)
 eq(h.save.forced_set_mode, true,
   "active save can re-enable forced Set mode in-game")
+eq(settings.items[9].right, "OFF", "no battle items defaults to disabled")
+settings.opts.onChoose(settings.items[9], settings)
+eq(h.save.no_battle_items, true,
+  "active save can forbid non-ball battle items in-game")
+eq(settings.items[9].right, "ON", "enabled battle-item rule shows as on")
+settings.opts.onChoose(settings.items[9], settings)
+eq(h.save.no_battle_items, false,
+  "active save can restore non-ball battle items in-game")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.
