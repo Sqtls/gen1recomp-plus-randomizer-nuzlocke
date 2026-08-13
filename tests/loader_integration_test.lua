@@ -35,6 +35,8 @@ local files = {
     read("features/static_randomizer.lua"),
   ["mods/strict/features/trainer_randomizer.lua"] =
     read("features/trainer_randomizer.lua"),
+  ["mods/strict/features/item_randomizer.lua"] =
+    read("features/item_randomizer.lua"),
   ["mods/strict/features/starter_randomizer.lua"] =
     read("features/starter_randomizer.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
@@ -68,8 +70,8 @@ assert(hooks:depth("trainer.party") == 3,
   "loaded mod must randomize and scale trainers and map the rival starter line")
 assert(hooks:depth("ui.options.rows") == 1,
   "loaded mod must lock Gold's Battle Style option")
-assert(hooks:depth("script.command") == 3,
-  "loaded mod must randomize static encounters and starter scripts")
+assert(hooks:depth("script.command") == 4,
+  "loaded mod must randomize static encounters, starter scripts and items")
 assert(hooks:depth("encounter.species") == 1,
   "loaded mod must randomize ordinary wild encounter slots")
 assert(hooks:depth("encounter.fishing") == 1,

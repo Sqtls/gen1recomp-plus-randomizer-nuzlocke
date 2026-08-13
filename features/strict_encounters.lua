@@ -37,6 +37,7 @@ function StrictEncounters.install(mod)
         { label = "TRAINERS", value = "trainer_randomizer" },
         { label = "TRAINER LEG", value = "trainer_legendaries" },
         { label = "BOSSES", value = "trainer_bosses" },
+        { label = "ITEMS", value = "item_randomizer" },
         { label = "SEED", value = "randomizer_seed" },
         { label = "DONE", value = "done" },
       }
@@ -75,8 +76,9 @@ function StrictEncounters.install(mod)
         items[21].right = setting(mod, "trainer_randomizer", "off"):upper()
         items[22].right = setting(mod, "trainer_legendaries", "exclude"):upper()
         items[23].right = setting(mod, "trainer_bosses", "include"):upper()
+        items[24].right = setting(mod, "item_randomizer", "off"):upper()
         local randomizer = mod.exports.wildRandomizer
-        items[24].right = tostring(randomizer and randomizer.seed() or "-")
+        items[25].right = tostring(randomizer and randomizer.seed() or "-")
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -182,6 +184,11 @@ function StrictEncounters.install(mod)
             mod.save:set("trainer_bosses",
               setting(mod, "trainer_bosses", "include") == "include"
                 and "exclude" or "include")
+          elseif item.value == "item_randomizer" then
+            local current = setting(mod, "item_randomizer", "off")
+            mod.save:set("item_randomizer",
+              ({ off = "balanced", balanced = "chaos", chaos = "off" })[current]
+                or "off")
           end
           refresh()
         end,
@@ -341,6 +348,13 @@ function StrictEncounters.install(mod)
       choices = { "INCLUDE", "EXCLUDE" },
       values = { "include", "exclude" },
     })
+    mod.ui.insertStepAfter(result, "plus_trainer_bosses", {
+      id = "plus_item_randomizer", kind = "choice", pic = "oak",
+      saveKey = "item_randomizer",
+      text = "Randomize found\nITEMS and TMs?",
+      choices = { "OFF", "BALANCED", "CHAOS" },
+      values = { "off", "balanced", "chaos" },
+    })
     return result
   end)
 
@@ -366,7 +380,8 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "gift_legendaries"
         or ev.saveKey == "trainer_randomizer"
         or ev.saveKey == "trainer_legendaries"
-        or ev.saveKey == "trainer_bosses") then
+        or ev.saveKey == "trainer_bosses"
+        or ev.saveKey == "item_randomizer") then
       mod.save:set(ev.saveKey, ev.value)
       if ev.saveKey == "forced_set_mode" and ev.value == true then
         local rule = mod.exports.forcedSetMode
