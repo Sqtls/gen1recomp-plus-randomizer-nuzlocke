@@ -37,7 +37,8 @@ assert(type(install) == "function", "main.lua must return a mod installer")
 install(mod)
 assert(mod.exports.project.generation == 2, "project must target Gen 2")
 assert(mod.exports.project.game == "gold", "project must target Gold")
-assert(mod.exports.project.status == "strict-first-encounters-and-permadeath",
+assert(mod.exports.project.status
+    == "strict-first-encounters-permadeath-and-run-reports",
   "project must report its active feature set")
 
 print("project smoke test: 3 checks passed")

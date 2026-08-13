@@ -46,6 +46,10 @@ function Permadeath.install(mod)
 
   mod.content.screens:register(GAME_OVER_SCREEN, {
     new = function(game)
+      local report = mod.exports.runReport
+      if report and type(report.newFailedScreen) == "function" then
+        return report.newFailedScreen(game, deleteActiveSave)
+      end
       local title = "NUZLOCKE FAILED"
       local action = "RESTART GAME"
       local screen = {

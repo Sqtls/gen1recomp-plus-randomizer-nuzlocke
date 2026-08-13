@@ -13,11 +13,12 @@ return function(mod)
   end
 
   install("features/strict_encounters.lua")
+  install("features/run_report.lua")
   install("features/permadeath.lua")
 
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "strict-first-encounters-and-permadeath",
+    status = "strict-first-encounters-permadeath-and-run-reports",
   }
 end
