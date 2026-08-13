@@ -7,6 +7,7 @@ package.loaded[battleStateModule] = {
   applyPartyItem = function() end,
   finishBattle = function() end,
   askNickname = function() end,
+  shiftOfferAllowed = function() return true end,
 }
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[worldModule] = {
@@ -44,7 +45,7 @@ install(mod)
 assert(mod.exports.project.generation == 2, "project must target Gen 2")
 assert(mod.exports.project.game == "gold", "project must target Gold")
 assert(mod.exports.project.status
-    == "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-level-caps-and-level-scaling",
+    == "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-and-forced-set-mode",
   "project must report its active feature set")
 
 print("project smoke test: 3 checks passed")

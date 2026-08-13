@@ -21,6 +21,8 @@ local files = {
     read("features/mandatory_nicknames.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
   ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
+  ["mods/strict/features/forced_set_mode.lua"] =
+    read("features/forced_set_mode.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -44,6 +46,8 @@ assert(hooks:depth("exp.gain") == 1,
   "loaded mod must enforce battle EXP level caps")
 assert(hooks:depth("trainer.party") == 1,
   "loaded mod must scale trainer rosters through the public hook")
+assert(hooks:depth("ui.options.rows") == 1,
+  "loaded mod must lock Gold's Battle Style option")
 
 local nicknameRequired, nicknameDefault = run.loader.hooks:call(
   "pokemon.nickname", function() return false, "CYNDAQUIL" end,
@@ -109,9 +113,25 @@ local game = {
     },
   },
   save = { party = {}, boxes = {}, inventory = {} },
+  options = { battleStyle = "SHIFT" },
   world = { map = { id = "ROUTE_29" }, player = {} },
 }
 run.loader.game = game
+run.loader.events:emit("game.ready", { game = game })
+assert(game.options.battleStyle == "SET",
+  "production game-ready path must immediately force Set mode")
+local optionRows = run.loader.hooks:call("ui.options.rows",
+  function(_, rows) return rows end, game, {
+    { id = "battleStyle", key = "battleStyle", values = { "SHIFT", "SET" } },
+  })
+assert(#optionRows[1].values == 1 and optionRows[1].values[1] == "SET",
+  "production Gold option row must disable Shift mode")
+local setScreen = { game = game, battle = {
+  player = { hp = 10 }, trainer = {},
+  party = { { hp = 10 }, { hp = 10 } },
+} }
+assert(BattleState.shiftOfferAllowed(setScreen) == false,
+  "production post-KO flow must not offer a free switch")
 
 local exports = run.loader.exports.gen1recomp_plus_randomizer_nuzlocke
 local activeCap, capTarget = exports.levelCaps.current(game)
