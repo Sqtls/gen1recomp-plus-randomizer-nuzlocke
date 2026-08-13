@@ -14,9 +14,15 @@ local legacyBattleState = {
     self.usedItem = itemId
     self.save.inventory[itemId] = self.save.inventory[itemId] - 1
   end,
+  applyPartyItem = function() end,
+  finishBattle = function(self)
+    if self.onDone then return self.onDone() end
+  end,
 }
 local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
 package.loaded[battleStateModule] = legacyBattleState
+local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
+package.loaded[worldModule] = { poisonFaintScript = function() end }
 
 local function newMod(savedValues)
   local hookChains = {}
@@ -115,14 +121,19 @@ local intro = introHook(function(steps) return steps end, {
 eq(intro[2].saveKey, "strict_encounters",
   "Oak asks whether strict encounters are enabled")
 eq(intro[3].saveKey, "dupes_mode", "Oak asks for duplicate policy")
+eq(intro[4].saveKey, "permadeath", "Oak asks whether permadeath is enabled")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
 h:emit("intro.oak_speech.answered", {
   saveKey = "dupes_mode", value = "skip",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "permadeath", value = true,
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
+eq(h.save.permadeath, true, "new-run permadeath setting is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -144,6 +155,11 @@ settings.opts.onChoose(settings.items[1], settings)
 eq(h.save.strict_encounters, true,
   "active save can re-enable strict encounters in-game")
 eq(settings.items[2].right, "SKIP", "active settings show duplicate policy")
+eq(settings.items[3].right, "ON", "active settings show permadeath")
+settings.opts.onChoose(settings.items[3], settings)
+eq(h.save.permadeath, false, "active save can disable permadeath in-game")
+settings.opts.onChoose(settings.items[3], settings)
+eq(h.save.permadeath, true, "active save can re-enable permadeath in-game")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.

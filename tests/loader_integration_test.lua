@@ -15,6 +15,7 @@ local files = {
   ["mods/strict/main.lua"] = read("main.lua"),
   ["mods/strict/features/strict_encounters.lua"] =
     read("features/strict_encounters.lua"),
+  ["mods/strict/features/permadeath.lua"] = read("features/permadeath.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -124,5 +125,46 @@ assert(screen.message == "Already caught\nSENTRET here!",
 assert(screen.phase == "resolving",
   "blocked ball message must enter the normal battle message phase")
 
+local deadOne = { species = "SENTRET", nickname = "SCOUT", level = 8, hp = 0 }
+local deadTwo = { species = "HOOTHOOT", level = 7, hp = 0 }
+local backup = { species = "RATTATA", level = 6, hp = 13 }
+local reserve = { species = "SENTRET", level = 5, hp = 11 }
+game.save.party = { deadOne, deadTwo }
+game.save.boxes = { [1] = { backup, reserve } }
+game.save.inventory.REVIVE = 2
+local wipe = {
+  wild = true, party = game.save.party, outcome = "lose",
+  clearAllVolatiles = function() end,
+}
+run.loader.events:emit("battle.fainted", {
+  battle = wipe, battler = deadOne, side = { index = 1, key = "player" },
+})
+run.loader.events:emit("battle.fainted", {
+  battle = wipe, battler = deadTwo, side = { index = 1, key = "player" },
+})
+
+local deathScreen = {
+  game = game, save = game.save, battle = wipe, phase = "party",
+}
+BattleState.applyPartyItem(deathScreen, "REVIVE", "revive", deadOne)
+assert(deadOne.hp == 0, "permadeath must refuse an in-battle Revive")
+assert(game.save.inventory.REVIVE == 2,
+  "refused Revive must not be consumed")
+
+local partyAtRespawn
+deathScreen.stopAlarm = function() end
+deathScreen.clearMenuCursors = function() end
+deathScreen.givePokerus = function() end
+deathScreen.onDone = function() partyAtRespawn = game.save.party[1] end
+BattleState.finishBattle(deathScreen)
+assert(#game.save.party == 1,
+  "party wipe must withdraw exactly one boxed Pokemon")
+assert(game.save.party[1] == backup,
+  "first living boxed Pokemon must save the run")
+assert(partyAtRespawn == backup,
+  "boxed rescue must happen before Gold handles respawn")
+assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
+  "rescued Pokemon must leave its box without reordering the rest")
+
 run.release()
-print("production loader integration: 13 checks passed")
+print("production loader integration: 19 checks passed")
