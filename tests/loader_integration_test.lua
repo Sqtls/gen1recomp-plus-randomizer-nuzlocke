@@ -27,6 +27,8 @@ local files = {
     read("features/gift_encounters.lua"),
   ["mods/strict/features/breeding_eggs.lua"] =
     read("features/breeding_eggs.lua"),
+  ["mods/strict/features/wild_randomizer.lua"] =
+    read("features/wild_randomizer.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
   ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
   ["mods/strict/features/forced_set_mode.lua"] =
@@ -60,6 +62,10 @@ assert(hooks:depth("ui.options.rows") == 1,
   "loaded mod must lock Gold's Battle Style option")
 assert(hooks:depth("script.command") == 1,
   "loaded mod must detect scripted static encounter origins")
+assert(hooks:depth("encounter.species") == 1,
+  "loaded mod must randomize ordinary wild encounter slots")
+assert(hooks:depth("encounter.fishing") == 1,
+  "loaded mod must randomize Gold fishing slots")
 
 local nicknameRequired, nicknameDefault = run.loader.hooks:call(
   "pokemon.nickname", function() return false, "CYNDAQUIL" end,
@@ -108,10 +114,14 @@ local game = {
       POTION = { pocket = "ITEM" },
     },
     pokemon = {
-      SENTRET = { evolutions = {}, growthRate = "MEDIUM_FAST",
-        baseStats = {}, types = {}, levelMoves = {} },
-      HOOTHOOT = { evolutions = {}, growthRate = "MEDIUM_FAST",
-        baseStats = {}, types = {}, levelMoves = {
+      SENTRET = { index = 161, evolutions = {}, growthRate = "MEDIUM_FAST",
+        baseStats = { hp = 35, attack = 46, defense = 34, speed = 20,
+          specialAttack = 35, specialDefense = 45 },
+        types = {}, levelMoves = {} },
+      HOOTHOOT = { index = 163, evolutions = {}, growthRate = "MEDIUM_FAST",
+        baseStats = { hp = 60, attack = 30, defense = 30, speed = 50,
+          specialAttack = 36, specialDefense = 56 },
+        types = {}, levelMoves = {
           { level = 2, move = "MOVE_A" },
           { level = 4, move = "MOVE_B" },
           { level = 6, move = "MOVE_C" },
@@ -207,6 +217,20 @@ local bucket = run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke
 assert(not (bucket and bucket.encounter_areas
     and bucket.encounter_areas["LANDMARK:16"]),
   "encounter before receiving any Ball must remain free")
+
+bucket = bucket or {}
+run.loader.modSave.gen1recomp_plus_randomizer_nuzlocke = bucket
+bucket.wild_randomizer = "chaos"
+bucket.wild_legendaries = "exclude"
+bucket.randomizer_seed = 123
+local randomized = run.loader.hooks:call("encounter.species",
+  function(encounter) return encounter end,
+  { species = "SENTRET", level = 3, slot = 1 },
+  { kind = "wild", mapId = "ROUTE_29", terrain = "grass",
+    daytime = "day", data = game.data })
+assert(randomized.species == "HOOTHOOT" and randomized.level == 3,
+  "production wild hook must replace species without changing its level")
+bucket.wild_randomizer = "off"
 
 game.save.inventory.FAST_BALL = 1
 run.loader.hooks:call("input.step", function() end, game, 1 / 60)
@@ -439,4 +463,4 @@ assert(#game.save.party == 1 and game.save.party[1] == backup,
   "completion must preserve the surviving final party")
 
 run.release()
-print("production loader integration: 38 checks passed")
+print("production loader integration: 41 checks passed")

@@ -26,6 +26,9 @@ function StrictEncounters.install(mod)
         { label = "STATIC", value = "static_encounters" },
         { label = "GIFTS", value = "gift_encounters" },
         { label = "BREEDING", value = "breeding_eggs" },
+        { label = "WILD MODE", value = "wild_randomizer" },
+        { label = "LEGENDS", value = "wild_legendaries" },
+        { label = "SEED", value = "randomizer_seed" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -52,6 +55,10 @@ function StrictEncounters.install(mod)
         items[10].right = setting(mod, "static_encounters", "area"):upper()
         items[11].right = setting(mod, "gift_encounters", "bonus"):upper()
         items[12].right = setting(mod, "breeding_eggs", "forbid"):upper()
+        items[13].right = setting(mod, "wild_randomizer", "off"):upper()
+        items[14].right = setting(mod, "wild_legendaries", "exclude"):upper()
+        local randomizer = mod.exports.wildRandomizer
+        items[15].right = tostring(randomizer and randomizer.seed() or "-")
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -108,6 +115,15 @@ function StrictEncounters.install(mod)
             mod.save:set("breeding_eggs",
               ({ forbid = "area", area = "bonus", bonus = "forbid" })[current]
                 or "forbid")
+          elseif item.value == "wild_randomizer" then
+            local current = setting(mod, "wild_randomizer", "off")
+            mod.save:set("wild_randomizer",
+              ({ off = "balanced", balanced = "chaos", chaos = "off" })[current]
+                or "off")
+          elseif item.value == "wild_legendaries" then
+            mod.save:set("wild_legendaries",
+              setting(mod, "wild_legendaries", "exclude") == "exclude"
+                and "allow" or "exclude")
           end
           refresh()
         end,
@@ -190,6 +206,20 @@ function StrictEncounters.install(mod)
       choices = { "FORBID", "AREA", "BONUS" },
       values = { "forbid", "area", "bonus" },
     })
+    mod.ui.insertStepAfter(result, "plus_breeding_eggs", {
+      id = "plus_wild_randomizer", kind = "choice", pic = "oak",
+      saveKey = "wild_randomizer",
+      text = "Randomize ordinary\nwild POK\195\169MON?",
+      choices = { "OFF", "BALANCED", "CHAOS" },
+      values = { "off", "balanced", "chaos" },
+    })
+    mod.ui.insertStepAfter(result, "plus_wild_randomizer", {
+      id = "plus_wild_legendaries", kind = "choice", pic = "oak",
+      saveKey = "wild_legendaries",
+      text = "Allow LEGENDARIES\nin ordinary wilds?",
+      choices = { "EXCLUDE", "ALLOW" },
+      values = { "exclude", "allow" },
+    })
     return result
   end)
 
@@ -204,7 +234,9 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "no_battle_items"
         or ev.saveKey == "static_encounters"
         or ev.saveKey == "gift_encounters"
-        or ev.saveKey == "breeding_eggs") then
+        or ev.saveKey == "breeding_eggs"
+        or ev.saveKey == "wild_randomizer"
+        or ev.saveKey == "wild_legendaries") then
       mod.save:set(ev.saveKey, ev.value)
       if ev.saveKey == "forced_set_mode" and ev.value == true then
         local rule = mod.exports.forcedSetMode

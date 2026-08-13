@@ -33,6 +33,7 @@ local World = {
     world.poisonPartyCount = #(world.game.save.party or {})
   end,
   askYesNo = function() end,
+  rockMonEncounter = function() return 0 end,
 }
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[worldModule] = World
