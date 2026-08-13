@@ -230,7 +230,8 @@ function StrictEncounters.install(mod)
     local areas = mod.save:get("encounter_areas")
     if type(areas) == "table" then
       for _, area in pairs(areas) do
-        if type(area) == "table" and area.status == "caught" then
+        if type(area) == "table" and area.status == "caught"
+            and area.result ~= "gift" then
           mod.save:set("nuzlocke_started", true)
           return true
         end

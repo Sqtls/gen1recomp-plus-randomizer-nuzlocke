@@ -2,6 +2,7 @@ local GiftEncounters = {}
 
 local World = require("src.world.gen2.World")
 local PrizeMenu = require("src.ui.gen2.PrizeMenu")
+local Specials = require("src.script.gen2.Specials")
 
 local REFUSAL = "This area's encounter\nis already used!"
 
@@ -57,6 +58,7 @@ end
 
 function GiftEncounters.install(mod)
   local wrappedVms = setmetatable({}, { __mode = "k" })
+  local worldsByVm = setmetatable({}, { __mode = "k" })
   local loadWorld = World.load
   assert(type(loadWorld) == "function",
     "Gold scripted gift enforcement is unavailable; update this mod")
@@ -64,6 +66,7 @@ function GiftEncounters.install(mod)
     local result = loadWorld(world, ...)
     local vm = world and world.vm
     if not vm or wrappedVms[vm] then return result end
+    worldsByVm[vm] = world
     wrappedVms[vm] = true
 
     local givePoke = vm.givePokeFn
@@ -77,8 +80,7 @@ function GiftEncounters.install(mod)
         local party = game and game.save and game.save.party or {}
         local before = #party
         local gift = givePoke(...)
-        local mon = #party > before and party[#party]
-          or type(gift) == "table" and gift.mon or nil
+        local mon = #party > before and party[#party] or nil
         if mon then claim(mod, game, mon.species) end
         return gift
       end
@@ -101,6 +103,29 @@ function GiftEncounters.install(mod)
       end
     end
     return result
+  end
+
+  local giveShuckle = Specials.ALL and Specials.ALL.GiveShuckle
+  assert(type(giveShuckle) == "function",
+    "Gold Shuckie gift enforcement is unavailable; update this mod")
+  local wrappedGiveShuckle = function(vm)
+    local world = worldsByVm[vm]
+    local game = world and world.game or mod.game
+    if not available(mod, game) then
+      refuseScript(world)
+      vm.scriptVar = 0
+      return
+    end
+    local party = game and game.save and game.save.party or {}
+    local before = #party
+    local result = giveShuckle(vm)
+    local mon = #party > before and party[#party] or nil
+    if mon then claim(mod, game, mon.species) end
+    return result
+  end
+  Specials.ALL.GiveShuckle = wrappedGiveShuckle
+  if Specials.HANDLERS and Specials.HANDLERS.GiveShuckle == giveShuckle then
+    Specials.HANDLERS.GiveShuckle = wrappedGiveShuckle
   end
 
   local checkPrize = PrizeMenu.check

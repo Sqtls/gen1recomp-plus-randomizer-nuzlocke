@@ -800,4 +800,31 @@ eq(upgraded.save.nuzlocke_started, true,
 eq(upgraded.save.encounter_areas["LANDMARK:17"].status, "active",
   "upgraded run stays active even when no Balls remain")
 
+-- AREA gifts can exist before the player owns a Ball. They must not trigger
+-- the legacy caught-route migration and start wild encounter enforcement.
+local giftOnlyMod, giftOnly = newMod({
+  strict_encounters = true,
+  gift_encounters = "area",
+  encounter_areas = {
+    ["LANDMARK:1"] = {
+      status = "caught", species = "CYNDAQUIL", result = "gift",
+    },
+  },
+})
+assert(loadfile(root .. "/main.lua"))(giftOnlyMod)
+local giftOnlyGame = {
+  save = { party = {}, boxes = {}, inventory = {} },
+  data = game.data,
+}
+giftOnlyMod.game = giftOnlyGame
+giftOnly:setMap("ROUTE_29")
+giftOnly:emit("battle.started", {
+  battle = { wild = true, enemy = { species = "SENTRET" } },
+  kind = "wild", species = "SENTRET",
+})
+eq(giftOnly.save.nuzlocke_started, nil,
+  "a pre-Ball AREA gift does not start wild encounter enforcement")
+eq(giftOnly.save.encounter_areas["LANDMARK:16"], nil,
+  "a pre-Ball wild encounter remains free after receiving an AREA gift")
+
 print(("strict encounters: %d checks passed"):format(checks))

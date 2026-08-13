@@ -16,6 +16,7 @@ local game = {
     ELMS_LAB = { landmark = 1 },
     VIOLET_POKECENTER_1F = { landmark = 5 },
     GOLDENROD_GAME_CORNER = { landmark = 11 },
+    MANIAS_HOUSE = { landmark = 12 },
   } },
   save = { party = {} },
 }
@@ -24,7 +25,10 @@ local World = {
   load = function(world)
     world.vm = {
       givePokeFn = function()
-        if failGift then return nil end
+        if failGift == "nil" then return nil end
+        if failGift == "record" then
+          return { mon = { species = "EEVEE" } }
+        end
         local mon = { species = "CYNDAQUIL" }
         game.save.party[#game.save.party + 1] = mon
         return { mon = mon }
@@ -55,6 +59,23 @@ PrizeMenu = {
 }
 package.loaded[table.concat(
   { "src", "ui", "gen2", "PrizeMenu" }, ".")] = PrizeMenu
+
+local function giveShuckle(vm)
+  if #game.save.party >= 6 then
+    vm.scriptVar = 0
+    return
+  end
+  game.save.party[#game.save.party + 1] = {
+    species = "SHUCKLE", nickname = "SHUCKIE",
+  }
+  vm.scriptVar = 1
+end
+local Specials = {
+  HANDLERS = { GiveShuckle = giveShuckle },
+  ALL = { GiveShuckle = giveShuckle },
+}
+package.loaded[table.concat(
+  { "src", "script", "gen2", "Specials" }, ".")] = Specials
 
 local listeners = {}
 local mod = {
@@ -103,12 +124,26 @@ eq(world.vm.aborted, true,
 
 -- Failed grants do not reserve an encounter.
 saved.encounter_areas["LANDMARK:1"] = nil
-failGift = true
+failGift = "nil"
 World.load(world)
 result = world.vm.givePokeFn(133, 20, 0)
 eq(result, nil, "failed underlying gift remains failed")
 eq(saved.encounter_areas["LANDMARK:1"], nil,
   "failed underlying gift does not consume the area")
+failGift = false
+
+-- The real engine can return a gift record after Party.add rejects a full
+-- party. Receipt, not the returned record, is what consumes the encounter.
+local previousParty = game.save.party
+game.save.party = { {}, {}, {}, {}, {}, {} }
+failGift = "record"
+World.load(world)
+result = world.vm.givePokeFn(133, 20, 0)
+eq(type(result), "table", "full-party engine result is preserved")
+eq(#game.save.party, 6, "failed full-party gift is not received")
+eq(saved.encounter_areas["LANDMARK:1"], nil,
+  "failed full-party gift does not consume the area")
+game.save.party = previousParty
 failGift = false
 
 -- Reload restores the real wrapped acquisition functions for the egg cases.
@@ -186,6 +221,39 @@ eq(#game.save.party, countBefore + 1,
   "BONUS Game Corner Pokémon reaches the party")
 eq(saved.encounter_areas["LANDMARK:11"].species, "DRATINI",
   "BONUS Game Corner purchase preserves the original area record")
+
+-- Shuckie is granted by a Gold special rather than the givepoke opcode.
+currentMap = "MANIAS_HOUSE"
+game.save.party = {}
+saved.gift_encounters = "area"
+saved.encounter_areas["LANDMARK:12"] = nil
+World.load(world)
+Specials.ALL.GiveShuckle(world.vm)
+eq(#game.save.party, 1, "AREA allows Shuckie on an unused landmark")
+eq(game.save.party[1].nickname, "SHUCKIE",
+  "Shuckie's special gift data is preserved")
+eq(saved.encounter_areas["LANDMARK:12"].species, "SHUCKLE",
+  "Shuckie consumes its receipt landmark")
+
+local shuckleBefore = #game.save.party
+blocked = coroutine.create(function()
+  Specials.ALL.GiveShuckle(world.vm)
+end)
+resumed, refusal = coroutine.resume(blocked)
+eq(resumed, true, "blocked Shuckie gift yields safely")
+eq(refusal.text, "This area's encounter\nis already used!",
+  "blocked Shuckie explains the area rule")
+coroutine.resume(blocked)
+eq(#game.save.party, shuckleBefore,
+  "blocked Shuckie is not added to the party")
+eq(world.vm.scriptVar, 0, "blocked Shuckie reports failure to its script")
+
+saved.gift_encounters = "bonus"
+Specials.ALL.GiveShuckle(world.vm)
+eq(#game.save.party, shuckleBefore + 1,
+  "BONUS allows Shuckie on a consumed landmark")
+eq(saved.encounter_areas["LANDMARK:12"].species, "SHUCKLE",
+  "BONUS Shuckie preserves the existing area record")
 
 eq(listeners["pokemon.received"], nil,
   "in-game and link trades are outside the gift policy")
