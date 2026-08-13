@@ -18,6 +18,7 @@ function StrictEncounters.install(mod)
         { label = "MANDATORY NAMES", value = "mandatory_nicknames" },
         { label = "LEVEL CAPS", value = "level_caps" },
         { label = "LEVEL SCALING", value = "level_scaling" },
+        { label = "SET MODE", value = "forced_set_mode" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -36,6 +37,8 @@ function StrictEncounters.install(mod)
           items[6].right = "OFF"
         end
         items[7].right = setting(mod, "level_scaling", true)
+          and "ON" or "OFF"
+        items[8].right = setting(mod, "forced_set_mode", true)
           and "ON" or "OFF"
       end
       refresh()
@@ -63,6 +66,11 @@ function StrictEncounters.install(mod)
           elseif item.value == "level_scaling" then
             mod.save:set("level_scaling",
               not setting(mod, "level_scaling", true))
+          elseif item.value == "forced_set_mode" then
+            local value = not setting(mod, "forced_set_mode", true)
+            mod.save:set("forced_set_mode", value)
+            local rule = mod.exports.forcedSetMode
+            if value and rule then rule.force(game) end
           elseif item.value == "done" then
             menu:close()
             return
@@ -115,6 +123,12 @@ function StrictEncounters.install(mod)
       text = "Scale wild POK\195\169MON\nand trainer levels?",
       choices = { "ON", "OFF" }, values = { true, false },
     })
+    mod.ui.insertStepAfter(result, "plus_level_scaling", {
+      id = "plus_forced_set_mode", kind = "choice", pic = "oak",
+      saveKey = "forced_set_mode",
+      text = "Always use SET\nbattle mode?",
+      choices = { "ON", "OFF" }, values = { true, false },
+    })
     return result
   end)
 
@@ -124,8 +138,13 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "permadeath"
         or ev.saveKey == "mandatory_nicknames"
         or ev.saveKey == "level_caps"
-        or ev.saveKey == "level_scaling") then
+        or ev.saveKey == "level_scaling"
+        or ev.saveKey == "forced_set_mode") then
       mod.save:set(ev.saveKey, ev.value)
+      if ev.saveKey == "forced_set_mode" and ev.value == true then
+        local rule = mod.exports.forcedSetMode
+        if rule then rule.force(mod.game) end
+      end
     end
   end)
 

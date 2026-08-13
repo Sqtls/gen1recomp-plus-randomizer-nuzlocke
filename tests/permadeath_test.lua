@@ -21,6 +21,7 @@ local BattleState = {
     end
   end,
   askNickname = function() end,
+  shiftOfferAllowed = function() return true end,
 }
 local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
 package.loaded[battleStateModule] = BattleState

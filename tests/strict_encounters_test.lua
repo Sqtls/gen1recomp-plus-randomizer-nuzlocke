@@ -19,6 +19,7 @@ local legacyBattleState = {
     if self.onDone then return self.onDone() end
   end,
   askNickname = function() end,
+  shiftOfferAllowed = function() return true end,
 }
 local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
 package.loaded[battleStateModule] = legacyBattleState
@@ -135,6 +136,8 @@ eq(intro[7].saveKey, "level_caps",
   "Oak asks whether level caps are enabled")
 eq(intro[8].saveKey, "level_scaling",
   "Oak asks whether level scaling is enabled")
+eq(intro[9].saveKey, "forced_set_mode",
+  "Oak asks whether Set mode is enforced")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -156,6 +159,9 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "level_scaling", value = true,
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "forced_set_mode", value = true,
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -164,6 +170,7 @@ eq(h.save.mandatory_nicknames, true,
   "new-run mandatory nickname setting is persisted")
 eq(h.save.level_caps, true, "new-run level cap setting is persisted")
 eq(h.save.level_scaling, true, "new-run level scaling setting is persisted")
+eq(h.save.forced_set_mode, true, "new-run Set-mode setting is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -217,6 +224,14 @@ eq(settings.items[7].right, "OFF", "disabled level scaling shows as off")
 settings.opts.onChoose(settings.items[7], settings)
 eq(h.save.level_scaling, true,
   "active save can re-enable level scaling in-game")
+eq(settings.items[8].right, "ON", "forced Set mode defaults to enabled")
+settings.opts.onChoose(settings.items[8], settings)
+eq(h.save.forced_set_mode, false,
+  "active save can disable forced Set mode in-game")
+eq(settings.items[8].right, "OFF", "disabled forced Set mode shows as off")
+settings.opts.onChoose(settings.items[8], settings)
+eq(h.save.forced_set_mode, true,
+  "active save can re-enable forced Set mode in-game")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.
