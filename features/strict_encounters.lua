@@ -354,9 +354,29 @@ function StrictEncounters.install(mod)
 
     activeBattle = battle
     originalShinies[battle] = isShiny(battle.enemy)
-    local key, mapId = canonicalArea(game)
+    local roaming = tonumber(battle.roaming)
+    local key, mapId
+    if roaming then
+      key = "ROAMER:" .. roaming
+      local current = mod.world:current()
+      mapId = current and current.mapId or "UNKNOWN"
+    else
+      key, mapId = canonicalArea(game)
+    end
     local existing = ledger()[key]
     local species = ev.species or battle.enemy and battle.enemy.species
+    if roaming then
+      battles[battle] = {
+        key = key, species = species, roaming = roaming,
+      }
+      if not existing then
+        writeArea(key, {
+          status = "active", species = species, mapId = mapId,
+          category = "roamer", roaming = roaming,
+        })
+      end
+      return
+    end
     local staticPolicy = static
       and setting(mod, "static_encounters", "area") or nil
     battles[battle] = {
@@ -397,6 +417,9 @@ function StrictEncounters.install(mod)
     battles[battle] = nil
     local current = ledger()[record.key]
     if current and current.status == "active" then
+      if record.roaming and (ev.result or battle.outcome) ~= "win" then
+        return
+      end
       current.status = "failed"
       current.result = ev.result or battle.outcome or "ended"
       writeArea(record.key, current)
@@ -426,10 +449,11 @@ function StrictEncounters.install(mod)
       return "Static encounters\ncannot be caught!"
     end
     if current and current.staticBonus then return nil end
-    if not (current and current.staticArea) and shinyClauseExempts(battle) then
+    if not (current and (current.staticArea or current.roaming))
+        and shinyClauseExempts(battle) then
       return nil
     end
-    local key = canonicalArea(game)
+    local key = current and current.key or canonicalArea(game)
     local state = ledger()[key]
     local species = state and state.species or current and current.species
       or battle and battle.enemy and battle.enemy.species
@@ -441,6 +465,11 @@ function StrictEncounters.install(mod)
     end
     if state and (state.status == "caught" or state.status == "failed"
         or (state.status == "active" and not current)) then
+      if current and current.roaming then
+        return state.status == "caught"
+          and ("Already caught\n%s!"):format(name)
+          or ("%s was defeated.\nRoamer failed!"):format(name)
+      end
       if state.status == "caught" then
         return ("Already caught\n%s here!"):format(name)
       elseif state.result == "run" then

@@ -26,6 +26,11 @@ function RunReport.install(mod)
     return locationForMap(game, current and current.mapId or "UNKNOWN")
   end
 
+  local function encounterLocation(game, area)
+    if area and area.category == "roamer" then return "ROAMING POKéMON" end
+    return locationForMap(game, area and area.mapId or "UNKNOWN")
+  end
+
   local function append(key, record)
     local journal = mod.save:get(key)
     if type(journal) ~= "table" then journal = {} end
@@ -86,7 +91,7 @@ function RunReport.install(mod)
         local area = areas[key]
         entries[#entries + 1] = {
           top = "CAUGHT " .. tostring(area.species or "POK\195\169MON"),
-          bottom = locationForMap(game, area.mapId or "UNKNOWN"),
+          bottom = encounterLocation(game, area),
         }
       end
     end
@@ -106,7 +111,7 @@ function RunReport.install(mod)
       entries[#entries + 1] = {
         top = ("%s: %s"):format(reason,
           tostring(area.species or "POK\195\169MON")),
-        bottom = locationForMap(game, area.mapId or "UNKNOWN"),
+        bottom = encounterLocation(game, area),
       }
     end
     return entries, #failed
@@ -257,7 +262,8 @@ function RunReport.install(mod)
     append("run_catches", {
       species = ev and ev.species or mon and mon.species,
       name = mon and (mon.nickname or mon.species) or ev and ev.species,
-      location = location(game),
+      location = ev and ev.battle and ev.battle.roaming
+        and "ROAMING POKéMON" or location(game),
     })
   end)
 

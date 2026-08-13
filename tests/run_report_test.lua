@@ -93,6 +93,11 @@ emit("pokemon.caught", { game = game, species = "HOOTHOOT" })
 eq(#saved.run_catches, 1, "successful catch is journalled")
 eq(saved.run_catches[1].species, "HOOTHOOT", "catch records species")
 eq(saved.run_catches[1].location, "ROUTE 29", "catch records landmark")
+emit("pokemon.caught", {
+  game = game, battle = { roaming = 1 }, species = "RAIKOU",
+})
+eq(saved.run_catches[2].location, "ROAMING POKéMON",
+  "roaming catch is recorded outside the route category")
 
 local battle = { wild = true }
 emit("battle.fainted", { battle = battle, battler = scout })
@@ -148,6 +153,8 @@ saved.encounter_areas = {
     mapId = "ROUTE_30", result = "run" },
   ["LANDMARK:4"] = { status = "failed", species = "HOOTHOOT",
     mapId = "ROUTE_31", result = "fled" },
+  ["ROAMER:2"] = { status = "failed", species = "ENTEI",
+    mapId = "ROUTE_37", result = "win", category = "roamer", roaming = 2 },
 }
 
 eq(type(mod.exports.runReport), "table", "run report exports its failed screen")
@@ -168,7 +175,7 @@ end
 eq(summary["BADGES  3"], true, "summary shows all Gold badges")
 eq(summary["TIME  12:34"], true, "summary shows run play time")
 eq(summary["CAUGHT  2"], true, "summary shows successful catches")
-eq(summary["FAILED  2"], true, "summary shows failed encounters")
+eq(summary["FAILED  3"], true, "summary shows failed encounters")
 eq(summary["LOST  1"], true, "summary shows memorial count")
 
 pressed = { right = true }
@@ -188,6 +195,18 @@ eq(encounterText["RAN: PIDGEY"], true,
 pressed = { down = true }
 screen:update()
 eq(screen.scroll, 2, "down scrolls a longer encounter history")
+screen:update()
+eq(screen.scroll, 3, "encounter history reaches roaming records")
+drawn = {}
+screen:draw()
+encounterText = {}
+for _, call in ipairs(drawn) do
+  if call.text then encounterText[call.text] = true end
+end
+eq(encounterText["KO: ENTEI"], true,
+  "encounter page lists a defeated roaming slot")
+eq(encounterText["ROAMING POKéMON"], true,
+  "roaming failure is not attributed to its random route")
 drawn = {}
 screen:draw()
 local scrolledText = {}
