@@ -30,6 +30,7 @@ package.loaded[worldModule] = {
   askYesNo = function() end,
   repelSuppresses = function() return false end,
   rockMonEncounter = function() return 0 end,
+  fruitTreeItem = function() return 0 end,
 }
 
 local function newMod(savedValues)
@@ -237,6 +238,11 @@ eq(intro[24].choices[1], "INCLUDE",
   "boss teams default to included")
 eq(intro[24].choices[2], "EXCLUDE",
   "Oak can preserve boss teams")
+eq(intro[25].saveKey, "item_randomizer",
+  "Oak asks whether found items are randomized")
+eq(intro[25].choices[1], "OFF", "item randomization defaults to off")
+eq(intro[25].choices[2], "BALANCED", "Oak offers balanced items")
+eq(intro[25].choices[3], "CHAOS", "Oak offers chaotic items")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -548,10 +554,17 @@ eq(settings.items[23].right, "EXCLUDE",
 settings.opts.onChoose(settings.items[23], settings)
 eq(h.save.trainer_bosses, "include",
   "boss policy cycles back to INCLUDE")
-local visibleSeed = tonumber(settings.items[24].right)
-eq(type(visibleSeed), "number", "active settings show the randomizer seed")
 settings.opts.onChoose(settings.items[24], settings)
-eq(tonumber(settings.items[24].right), visibleSeed,
+eq(h.save.item_randomizer, "balanced", "found items can be randomized")
+eq(settings.items[24].right, "BALANCED", "balanced item mode is displayed")
+settings.opts.onChoose(settings.items[24], settings)
+eq(h.save.item_randomizer, "chaos", "item mode cycles to CHAOS")
+settings.opts.onChoose(settings.items[24], settings)
+eq(h.save.item_randomizer, "off", "item mode cycles back to OFF")
+local visibleSeed = tonumber(settings.items[25].right)
+eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+settings.opts.onChoose(settings.items[25], settings)
+eq(tonumber(settings.items[25].right), visibleSeed,
   "the displayed seed is read-only")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps

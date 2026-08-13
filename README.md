@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.23.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.24.1-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -37,6 +37,7 @@ scaled, and a failed run ends with a complete run report.
 - [Starter randomization](#starter-randomization)
 - [Gift randomization](#gift-randomization)
 - [Trainer randomization](#trainer-randomization)
+- [Item randomization](#item-randomization)
 - [Encounter rules](#encounter-rules)
 - [Permadeath and run endings](#permadeath-and-run-endings)
 - [Level caps](#level-caps)
@@ -55,6 +56,7 @@ scaled, and a failed run ends with a complete run report.
 | Starter randomizer | Generates three unique starter choices and keeps the rival's starter line synchronized. |
 | Gift randomizer | Replaces scripted gifts, Togepi's Egg, Game Corner Pokémon, and Shuckie while preserving their event behavior. |
 | Trainer randomizer | Replaces trainer parties deterministically while preserving party size, final levels, items, and rival starter continuity. |
+| Item randomizer | Replaces found, hidden, gifted, berry-tree, and Gym Leader TM items while leaving key items and HMs untouched. |
 | Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
 | Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy, using every species ever owned during the run. |
 | Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
@@ -128,6 +130,7 @@ read-only summary of the active rules and current level cap.
 | `TRAINERS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls trainer party species randomization. |
 | `TRAINER LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether trainer slots may become legendary or mythical. |
 | `BOSSES` | `INCLUDE` | `INCLUDE` / `EXCLUDE` | Controls whether major boss teams are randomized. |
+| `ITEMS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls found, hidden, gifted, berry-tree, and TM reward item randomization. |
 | `SEED` | Generated | Read-only | Shows the stable seed used for this run's randomization. |
 
 ## Wild randomization
@@ -266,6 +269,32 @@ leaders, Blue, and Red. `EXCLUDE` preserves those teams while ordinary trainers
 continue to randomize. The rival's starter line always remains synchronized
 with the separately configured starter randomizer, even when boss trainer
 randomization is excluded.
+
+## Item randomization
+
+`ITEMS` randomizes every item the overworld hands over: itemballs lying in the
+overworld, hidden items found with A or the ITEMFINDER, items given by NPCs,
+the fruit picked from berry trees, and the TMs awarded for beating a Gym
+Leader. The replacement is keyed to the
+run seed, the map, the script's object, and the original item, so re-reading a
+script never rerolls its reward.
+
+| Mode | Behaviour |
+| --- | --- |
+| `OFF` | Preserves Gold's original items. |
+| `BALANCED` | Replaces each item with one of a similar price. |
+| `CHAOS` | Replaces each item from the complete permitted item pool. |
+
+TMs are only ever replaced by other TMs, so the machine pool stays intact.
+Quantities are preserved.
+
+> [!NOTE]
+> Key items and HMs are never randomized, in either direction: they are never
+> replaced and never appear as a replacement, so no run can be made
+> unfinishable. The Bug-Catching Contest's PARK BALL and the unused item rows
+> are excluded from the pool for the same reason. APRICORN trees also keep
+> their own apricorn, so Kurt's custom Balls stay reachable; ordinary berry
+> trees are randomized, and each tree keeps one fruit for the whole run.
 
 ## Encounter rules
 
