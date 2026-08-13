@@ -73,5 +73,18 @@ local allowed = run.loader.hooks:call("battle.catch_allowed", function() return 
 assert(allowed == false,
   "a second species on the same landmark must be rejected")
 
+-- Gold v0.1.80 resolves balls through catch.rate and has no pre-throw
+-- battle.catch_allowed call site. Exercise that shipped path with a guaranteed
+-- Master Ball: strict enforcement still has to turn the second catch into a
+-- failed roll.
+local catchingPath = table.concat({ "src", "battle", "gen2", "Catching.lua" }, "/")
+local Catching = assert(loadfile(catchingPath))()
+local caught = Catching.attempt({
+  ball = "MASTER_BALL", species = "HOOTHOOT",
+  maxHp = 20, hp = 20, catchRate = 255,
+})
+assert(caught == false,
+  "Gold v0.1.80 must reject a second catch through catch.rate")
+
 run.release()
-print("production loader integration: 6 checks passed")
+print("production loader integration: 7 checks passed")

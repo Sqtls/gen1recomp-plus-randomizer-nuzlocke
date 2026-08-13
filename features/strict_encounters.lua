@@ -78,6 +78,7 @@ function StrictEncounters.install(mod)
   end)
 
   local battles = setmetatable({}, { __mode = "k" })
+  local activeBattle
 
   local function enabled(game)
     return setting(mod, "strict_encounters", true) == true
@@ -109,9 +110,13 @@ function StrictEncounters.install(mod)
     mod.save:set("encounter_areas", areas)
   end
 
-  local function eligibleBattle(battle)
+  local function eligibleBattle(battle, game, ev)
+    local save = game and game.save
+    local contest = battle and battle.contest
+      or save and save.bugContest and save.bugContest.active == true
+    local battleType = ev and ev.battleType or battle and battle.battleType
     return type(battle) == "table" and battle.wild == true
-      and not battle.tutorial and not battle.contest
+      and not battle.tutorial and battleType ~= 3 and not contest
   end
 
   local function family(data, species)
@@ -155,8 +160,9 @@ function StrictEncounters.install(mod)
   mod.events:on("battle.started", function(ev)
     local battle = ev and ev.battle
     local game = mod.game
-    if not enabled(game) or not eligibleBattle(battle) then return end
+    if not enabled(game) or not eligibleBattle(battle, game, ev) then return end
 
+    activeBattle = battle
     local key, mapId = canonicalArea(game)
     local existing = ledger()[key]
     battles[battle] = { key = key }
@@ -181,6 +187,7 @@ function StrictEncounters.install(mod)
 
   mod.events:on("battle.ended", function(ev)
     local battle = ev and ev.battle
+    if activeBattle == battle then activeBattle = nil end
     local record = battle and battles[battle]
     if not record then return end
     battles[battle] = nil
@@ -194,6 +201,7 @@ function StrictEncounters.install(mod)
 
   mod.events:on("pokemon.caught", function(ev)
     local battle = ev and ev.battle
+    if activeBattle == battle then activeBattle = nil end
     local record = battle and battles[battle]
     if not record then return end
     battles[battle] = nil
@@ -206,24 +214,37 @@ function StrictEncounters.install(mod)
     end
   end)
 
-  mod.hooks:wrap("battle.catch_allowed", function(next, ctx)
-    local game = ctx and ctx.game or mod.game
-    local battle = ctx and ctx.battle
-    if not enabled(game) or not eligibleBattle(battle) then return next(ctx) end
-
+  local function captureDenial(game, battle)
+    if not enabled(game) or not eligibleBattle(battle, game) then return nil end
     local key = canonicalArea(game)
     local state = ledger()[key]
     local current = battles[battle]
     if current and current.duplicate then
-      return false, current.duplicate == "lose"
+      return current.duplicate == "lose"
         and "A duplicate encounter\nwas lost for this area!"
         or "This is a duplicate.\nFind a different family!"
     end
     if state and (state.status == "caught" or state.status == "failed"
         or (state.status == "active" and not current)) then
-      return false, "This area's encounter\nis no longer available!"
+      return "This area's encounter\nis no longer available!"
     end
+    return nil
+  end
+
+  mod.hooks:wrap("battle.catch_allowed", function(next, ctx)
+    local game = ctx and ctx.game or mod.game
+    local denial = captureDenial(game, ctx and ctx.battle)
+    if denial then return false, denial end
     return next(ctx)
+  end, 1000)
+
+  -- Gold v0.1.80 has catch.rate but does not call battle.catch_allowed before
+  -- spending a ball. Force a failed roll there as a compatibility fallback;
+  -- newer builds stop at the pre-throw hook above and never reach this one.
+  mod.hooks:wrap("catch.rate", function(next, ball, mon, def, opts)
+    local battle = opts and opts.battle or activeBattle
+    if captureDenial(mod.game, battle) then return false, 0 end
+    return next(ball, mon, def, opts)
   end, 1000)
 end
 

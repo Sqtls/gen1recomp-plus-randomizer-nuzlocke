@@ -197,11 +197,34 @@ eq(allowed, true, "first encounter may use a ball")
 eq(delegated, true, "allowed throw follows Gold's normal ball path")
 eq(h.save.encounter_areas["LANDMARK:17"].status, "active",
   "failed ball does not burn the route while battle continues")
+local rateHook = h.hooks["catch.rate"]
+eq(type(rateHook), "function", "Gold v0.1.80 catch fallback is registered")
+delegated = false
+local caught, rate = rateHook(function()
+  delegated = true
+  return false, 42
+end, "POKE_BALL", catchBattle.enemy, nil, {})
+eq(caught, false, "first encounter preserves Gold's normal catch result")
+eq(rate, 42, "first encounter preserves Gold's calculated catch rate")
+eq(delegated, true, "first encounter delegates through catch.rate")
 h:emit("pokemon.caught", {
   game = game, battle = catchBattle, species = "SENTRET",
 })
 eq(h.save.encounter_areas["LANDMARK:17"].status, "caught",
   "successful catch permanently seals the area")
+local blockedBattle = { wild = true, enemy = { species = "HOOTHOOT" } }
+h:emit("battle.started", {
+  battle = blockedBattle, kind = "wild", species = "HOOTHOOT",
+})
+delegated = false
+caught, rate = rateHook(function()
+  delegated = true
+  return true, 255
+end, "MASTER_BALL", blockedBattle.enemy, nil, {})
+eq(caught, false, "Gold v0.1.80 cannot catch again in a sealed area")
+eq(rate, 0, "blocked v0.1.80 catch is forced to fail")
+eq(delegated, false, "blocked v0.1.80 catch bypasses the vanilla roll")
+h:emit("battle.ended", { battle = blockedBattle, result = "run" })
 
 -- Dupes checks the complete evolution family and remembers catches even if
 -- that Pokemon later leaves the party. SKIP preserves the route but forbids
@@ -290,6 +313,28 @@ for index, exemption in ipairs(exemptions) do
   eq(h.save.encounter_areas["LANDMARK:" .. (23 + index)], nil,
     exemption.label .. " battle is exempt")
 end
+
+-- Gold v0.1.80 keeps tutorial/contest markers outside the Battle object. The
+-- tutorial is identifiable by wBattleType, while an active contest lives in
+-- save.bugContest.
+h:setMap("ROUTE_38")
+local legacyTutorial = { wild = true, battleType = 3,
+  enemy = { species = "HOOTHOOT" } }
+h:emit("battle.started", { battle = legacyTutorial, kind = "wild",
+  battleType = 3, species = "HOOTHOOT" })
+h:emit("battle.ended", { battle = legacyTutorial, result = "caught" })
+eq(h.save.encounter_areas["LANDMARK:25"], nil,
+  "Gold v0.1.80 tutorial battle is exempt")
+
+h:setMap("ROUTE_39")
+game.save.bugContest = { active = true }
+local legacyContest = { wild = true, enemy = { species = "HOOTHOOT" } }
+h:emit("battle.started", { battle = legacyContest, kind = "wild",
+  species = "HOOTHOOT" })
+h:emit("battle.ended", { battle = legacyContest, result = "run" })
+eq(h.save.encounter_areas["LANDMARK:26"], nil,
+  "Gold v0.1.80 Bug-Catching Contest battle is exempt")
+game.save.bugContest.active = false
 
 -- The ledger is ordinary mod.save data. A fresh installation against the same
 -- save must enforce failures recorded before reload.

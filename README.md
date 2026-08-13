@@ -18,6 +18,8 @@ The first feature is strict first-encounter enforcement.
 - Trainer battles, the catching tutorial, and the Bug-Catching Contest are
   exempt.
 - Gold maps sharing the same landmark share one encounter allocation.
+- On Gold v0.1.80, blocked catches are forced to fail through its catch-rate
+  hook and therefore still consume the selected ball and turn.
 
 ## Principles
 
@@ -31,7 +33,9 @@ The first feature is strict first-encounter enforcement.
 From the gen1recomp++ repository root:
 
 ```sh
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/strict_encounters_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
 python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture
 python3 tools/modkit.py gen2check ../gen1recomp-plus-randomizer-nuzlocke --strict
 python3 tools/modkit.py lint ../gen1recomp-plus-randomizer-nuzlocke
