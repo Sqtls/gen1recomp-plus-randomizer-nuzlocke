@@ -36,10 +36,15 @@ package.loaded[table.concat(
 
 local Mon = {}
 function Mon.new(_, species, level, opts)
+  local moves = opts and opts.moves
+  if moves == nil then
+    moves = { "MOVE" .. (level - 3), "MOVE" .. (level - 2),
+      "MOVE" .. (level - 1), "MOVE" .. level }
+  end
   return {
     species = species,
     level = level,
-    moves = opts and opts.moves,
+    moves = moves,
     dvs = opts and opts.dvs,
     hp = opts and opts.hp or level,
   }
@@ -47,8 +52,33 @@ end
 package.loaded[table.concat(
   { "src", "battle", "gen2", "M" .. "on" }, ".")] = Mon
 
+local World = {}
+function World:repelSuppresses(level)
+  self.checkedLevel = level
+  return level < self.leadLevel
+end
+package.loaded[table.concat(
+  { "src", "world", "gen2", "Wor" .. "ld" }, ".")] = World
+
 mod.game = {
-  data = {},
+  data = { gen2Trainers = { classes = {
+    YOUNGSTER = { trainers = { {
+      id = "YOUNGSTER1", index = 1,
+      party = {
+        { species = "RATTATA", level = 5 },
+        { species = "SPEAROW", level = 18 },
+      },
+    } } },
+    BROCK = { trainers = { {
+      id = "BROCK1", index = 1,
+      party = {
+        { species = "GRAVELER", level = 41,
+          moves = { "DEFENSE_CURL", "ROCK_SLIDE" } },
+        { species = "RHYHORN", level = 41 },
+        { species = "ONIX", level = 42 },
+      },
+    } } },
+  } } },
   save = { party = {
     { species = "CYNDAQUIL", level = 10 },
     { species = "TOGEPI", level = 50, isEgg = true },
@@ -76,6 +106,32 @@ local battle = Battle.new({
 })
 eq(battle.wild.level, 16,
   "wild levels use 80 percent of the highest non-Egg party member")
+eq(table.concat(battle.wild.moves, ","), "MOVE13,MOVE14,MOVE15,MOVE16",
+  "scaled wild Pokemon learn their latest four natural moves")
+
+mod.game.save.party = {
+  { species = "CYNDAQUIL", level = 22 },
+  { species = "PIDGEY", level = 29 },
+}
+currentCap = 30
+local world = setmetatable({ leadLevel = 22 }, { __index = World })
+local suppressed = world:repelSuppresses(3)
+eq(suppressed, false,
+  "Repel allows an encounter whose scaled level reaches the lead level")
+eq(world.checkedLevel, 23, "Repel checks the encounter's scaled level")
+battle = Battle.new({
+  data = mod.game.data,
+  party = mod.game.save.party,
+  wild = { species = "RATTATA", level = 3, moves = { "TACKLE" }, dvs = {} },
+})
+eq(battle.wild.level, 23,
+  "the battle reuses the exact level that passed the Repel check")
+mod.game.save.party = {
+  { species = "CYNDAQUIL", level = 10 },
+  { species = "TOGEPI", level = 50, isEgg = true },
+  { species = "PIDGEY", level = 20 },
+}
+currentCap = 25
 
 mod.game.save.party[3].level = 25
 currentCap = 30
@@ -159,6 +215,9 @@ eq(battle.trainer.party[1].level, 16,
   "ordinary trainer Pokemon scale to 80 percent of the party maximum")
 eq(battle.trainer.party[2].level, 18,
   "ordinary trainer scaling never lowers a stronger roster member")
+eq(table.concat(battle.trainer.party[1].moves, ","),
+  "MOVE13,MOVE14,MOVE15,MOVE16",
+  "scaled ordinary trainers learn their latest four natural moves")
 
 saved.level_scaling = false
 local vanillaTrainer = hooks["trainer.party"](
@@ -174,7 +233,8 @@ battle = trainerBattle({
   data = mod.game.data,
   party = mod.game.save.party,
   trainer = { classId = "BROCK", party = {
-    { species = "GRAVELER", level = 41, moves = {}, dvs = {} },
+    { species = "GRAVELER", level = 41,
+      moves = { "DEFENSE_CURL", "ROCK_SLIDE" }, dvs = {} },
     { species = "RHYHORN", level = 41, moves = {}, dvs = {} },
     { species = "ONIX", level = 42, moves = {}, dvs = {} },
   } },
@@ -183,6 +243,9 @@ eq(battle.trainer.party[1].level, 51,
   "Kanto leader scaling preserves the roster's level spread")
 eq(battle.trainer.party[3].level, 52,
   "the first Kanto leader's ace scales to level 52")
+eq(table.concat(battle.trainer.party[1].moves, ","),
+  "DEFENSE_CURL,ROCK_SLIDE",
+  "explicit trainer movesets survive level scaling")
 
 currentCap = 61
 mod.game.save.player.kantoBadges = {

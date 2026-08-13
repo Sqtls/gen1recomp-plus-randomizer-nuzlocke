@@ -46,7 +46,9 @@ implemented.
   members scale around 80% of the highest-level non-Egg Pokémon currently in
   the party, with a random variance of two levels in either direction. Vanilla
   levels are never reduced and scaling never raises an addition past the active
-  cap. Boxed Pokémon are ignored.
+  cap. Scaled Pokémon regenerate the latest four natural moves available at
+  their new level; explicitly authored trainer movesets remain unchanged.
+  Boxed Pokémon are ignored, and Repels evaluate the final scaled wild level.
 - Kanto leaders use ace targets of 52, 55, 58, 61, 64, 67, and 70 based on the
   number of Kanto badges already owned, so they remain open-order. Each roster
   keeps its original level spread. Blue's target is 75 and Red's is 81; player

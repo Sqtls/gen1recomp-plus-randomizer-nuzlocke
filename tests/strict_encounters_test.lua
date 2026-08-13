@@ -27,6 +27,7 @@ package.loaded[worldModule] = {
   load = function() end,
   poisonFaintScript = function() end,
   askYesNo = function() end,
+  repelSuppresses = function() return false end,
 }
 
 local function newMod(savedValues)
