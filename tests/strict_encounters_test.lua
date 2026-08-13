@@ -332,6 +332,109 @@ eq(h.save.nuzlocke_started, true,
   "receiving any Ball permanently starts the Nuzlocke")
 game.save.inventory.FAST_BALL = nil
 
+-- Roaming slots are persistent encounters of their own. Their species may be
+-- randomized later, so identity comes from battle.roaming rather than a list.
+local catchHook = h.hooks["battle.catch_allowed"]
+eq(type(catchHook), "function", "catch enforcement hook is registered")
+local roamer = {
+  wild = true, roaming = 1,
+  enemy = { species = "RAIKOU" },
+}
+h:emit("battle.started", {
+  battle = roamer, kind = "wild", species = "RAIKOU",
+})
+eq(h.save.encounter_areas["ROAMER:1"].status, "active",
+  "first roaming meeting starts its slot encounter")
+eq(h.save.encounter_areas["ROAMER:1"].category, "roamer",
+  "roaming record retains its special category")
+eq(h.save.encounter_areas["LANDMARK:16"], nil,
+  "roamer does not consume the route where it appears")
+local allowed = catchHook(function() return true end, {
+  game = game, battle = roamer, species = "RAIKOU",
+})
+eq(allowed, true, "first roaming meeting may use a ball")
+h:emit("battle.ended", { battle = roamer, result = "fled" })
+eq(h.save.encounter_areas["ROAMER:1"].status, "active",
+  "natural roamer flee keeps its slot encounter active")
+
+h:setMap("ROUTE_30")
+local roamerAgain = {
+  wild = true, roaming = 1,
+  enemy = { species = "RAIKOU" },
+}
+h:emit("battle.started", {
+  battle = roamerAgain, kind = "wild", species = "RAIKOU",
+})
+allowed = catchHook(function() return true end, {
+  game = game, battle = roamerAgain, species = "RAIKOU",
+})
+eq(allowed, true, "same roamer remains catchable on a later route")
+h:emit("battle.ended", { battle = roamerAgain, result = "run" })
+eq(h.save.encounter_areas["ROAMER:1"].status, "active",
+  "running from a roamer keeps its slot encounter active")
+eq(h.save.encounter_areas["LANDMARK:17"], nil,
+  "later roaming meeting also preserves its route")
+
+h:setMap("ROUTE_31")
+local caughtRoamer = {
+  wild = true, roaming = 1,
+  enemy = { species = "RAIKOU" },
+}
+h:emit("battle.started", {
+  battle = caughtRoamer, kind = "wild", species = "RAIKOU",
+})
+h:emit("pokemon.caught", {
+  game = game, battle = caughtRoamer, species = "RAIKOU",
+})
+eq(h.save.encounter_areas["ROAMER:1"].status, "caught",
+  "catching a roamer completes only its roaming slot")
+eq(h.save.encounter_areas["LANDMARK:18"], nil,
+  "catching a roamer leaves the current route available")
+
+h:setMap("ROUTE_29")
+local defeatedRoamer = {
+  wild = true, roaming = 2,
+  enemy = { species = "SENTRET" },
+}
+h:emit("battle.started", {
+  battle = defeatedRoamer, kind = "wild", species = "SENTRET",
+})
+h:emit("battle.ended", { battle = defeatedRoamer, result = "win" })
+eq(h.save.encounter_areas["ROAMER:2"].status, "failed",
+  "defeating a roamer permanently fails its roaming slot")
+eq(h.save.encounter_areas["LANDMARK:16"], nil,
+  "defeating a roamer does not fail the route")
+
+local failedRoamer = {
+  wild = true, roaming = 2,
+  enemy = { species = "SENTRET" },
+}
+h:emit("battle.started", {
+  battle = failedRoamer, kind = "wild", species = "SENTRET",
+})
+local denial
+allowed, denial = catchHook(function() return true end, {
+  game = game, battle = failedRoamer, species = "SENTRET",
+})
+eq(allowed, false, "failed roaming slot cannot be caught later")
+eq(denial, "SENTRET was defeated.\nRoamer failed!",
+  "failed roaming slot has a dedicated refusal")
+h:emit("battle.ended", { battle = failedRoamer, result = "fled" })
+
+local duplicateSpeciesRoamer = {
+  wild = true, roaming = 3,
+  enemy = { species = "RAIKOU" },
+}
+h:emit("battle.started", {
+  battle = duplicateSpeciesRoamer, kind = "wild", species = "RAIKOU",
+})
+allowed = catchHook(function() return true end, {
+  game = game, battle = duplicateSpeciesRoamer, species = "RAIKOU",
+})
+eq(allowed, true,
+  "a different roaming slot is independent even with the same species")
+h:emit("battle.ended", { battle = duplicateSpeciesRoamer, result = "fled" })
+
 local first = { wild = true, enemy = { species = "SENTRET" } }
 h:emit("battle.started", { battle = first, kind = "wild", species = "SENTRET" })
 eq(h.save.encounter_areas["LANDMARK:16"].status, "active",
@@ -340,10 +443,24 @@ h:emit("battle.ended", { battle = first, result = "win" })
 eq(h.save.encounter_areas["LANDMARK:16"].status, "failed",
   "knocking out the encounter permanently fails the area")
 h:setMap("ROUTE_29_GATE")
-local catchHook = h.hooks["battle.catch_allowed"]
-eq(type(catchHook), "function", "catch enforcement hook is registered")
+local roamerOnFailedRoute = {
+  wild = true, roaming = 3,
+  enemy = { species = "RAIKOU" },
+}
+h:emit("battle.started", {
+  battle = roamerOnFailedRoute, kind = "wild", species = "RAIKOU",
+})
+allowed = catchHook(function() return true end, {
+  game = game, battle = roamerOnFailedRoute, species = "RAIKOU",
+})
+eq(allowed, true, "active roamer bypasses a failed route")
+h:emit("battle.ended", { battle = roamerOnFailedRoute, result = "lose" })
+eq(h.save.encounter_areas["ROAMER:3"].status, "active",
+  "losing to a roamer leaves its persistent encounter active")
+eq(h.save.encounter_areas["LANDMARK:16"].status, "failed",
+  "roamer does not alter the failed route it appeared on")
 local delegated = false
-local allowed, denial = catchHook(function()
+allowed, denial = catchHook(function()
   delegated = true
   return true
 end, { game = game, battle = { wild = true }, species = "SENTRET" })

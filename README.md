@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.13.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.14.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -46,6 +46,7 @@ scaled, and a failed run ends with a complete run report.
 | Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
 | Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy. |
 | Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
+| Roaming encounters | Tracks each roaming slot across routes until that Pokémon is caught or defeated. |
 | Permadeath | Removes fainted party Pokémon and refuses Revives. |
 | Reserve recovery | After a wipe, automatically recovers one Pokémon from the PC or Day Care before ending the run. |
 | Mandatory nicknames | Requires a real custom nickname for catches, starters, gifts, and hatched Eggs. |
@@ -148,6 +149,23 @@ consumes, repairs, or replaces the area's ordinary encounter record.
 
 The static encounter policy takes priority over the shiny clause. A forbidden
 static encounter remains forbidden even when shiny.
+
+### Roaming Pokémon
+
+Raikou, Entei, and Suicune are tracked as persistent roaming encounters rather
+than encounters for whichever route they happen to appear on.
+
+| Outcome | Roaming encounter result |
+| --- | --- |
+| Roamer appears | The current route remains available. |
+| Roamer flees | Its roaming encounter remains active. |
+| Player runs | Its roaming encounter remains active. |
+| Roamer is caught | Its roaming encounter is completed. |
+| Roamer is defeated | Its roaming encounter is permanently failed. |
+
+Each Gold roaming slot has its own allocation. Route limits, the dupes clause,
+and static encounter policy do not apply. Tracking uses the roaming slot rather
+than a species list, so randomized roaming species will retain the correct rule.
 
 ### Static encounters
 
@@ -306,7 +324,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.13.0 |
+| Current mod version | 0.14.0 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly
