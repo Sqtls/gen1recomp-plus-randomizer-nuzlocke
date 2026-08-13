@@ -171,6 +171,13 @@ function RunReport.install(mod)
         ("LOST  %d"):format(#(mod.save:get("run_deaths") or {})),
       },
     }
+    screen.onPrimary = function()
+      if deleteActiveSave(game) then
+        if game.returnToTitle then game:returnToTitle() end
+      else
+        screen.error = "SAVE DELETE FAILED"
+      end
+    end
     if mod.save:get("run_history_incomplete") == true then
       screen.summary[#screen.summary + 1] = "HISTORY PARTIAL"
     end
@@ -193,11 +200,9 @@ function RunReport.install(mod)
       elseif input:wasPressed("up") then
         self.scroll = math.max(1, self.scroll - 1)
       elseif input:wasPressed("a") then
-        if deleteActiveSave(game) then
-          if game.returnToTitle then game:returnToTitle() end
-        else
-          self.error = "SAVE DELETE FAILED"
-        end
+        self.onPrimary(self)
+      elseif input:wasPressed("b") and self.onSecondary then
+        self.onSecondary(self)
       end
     end
 
@@ -219,7 +224,7 @@ function RunReport.install(mod)
       love.graphics.setColor(1, 1, 1, 1)
       love.graphics.rectangle("fill", 0, 0, 160, 144)
       love.graphics.setColor(0, 0, 0, 1)
-      centered("NUZLOCKE FAILED", 4)
+      centered(self.title, 4)
       centered(("%s  %d/%d"):format(self.pages[self.page].name,
         self.page, #self.pages), 20)
 
@@ -241,19 +246,56 @@ function RunReport.install(mod)
         end
       end
 
-      centered("D-PAD: BROWSE", 108)
-      local action = "RESTART GAME"
-      local rowWidth = 8 + mod.ui.Font.width(action)
-      local x = math.floor((160 - rowWidth) / 2)
-      mod.ui.Font.drawCode(mod.ui.Theme.cursor, x, 124)
-      mod.ui.Font.draw(action, x + 8, 124)
+      if self.secondaryAction then
+        centered("A: " .. self.action, 108)
+        centered("B: " .. self.secondaryAction, 124)
+      else
+        centered("D-PAD: BROWSE", 108)
+        local rowWidth = 8 + mod.ui.Font.width(self.action)
+        local x = math.floor((160 - rowWidth) / 2)
+        mod.ui.Font.drawCode(mod.ui.Theme.cursor, x, 124)
+        mod.ui.Font.draw(self.action, x + 8, 124)
+      end
       if self.error then centered(self.error, 96) end
     end
 
     return screen
   end
 
-  mod.exports.runReport = { newFailedScreen = newFailedScreen }
+  local function newCompletedScreen(game)
+    local screen = newFailedScreen(game, function() return false end)
+    local party = {}
+    for _, mon in ipairs(game and game.save and game.save.party or {}) do
+      local pokemon = game and game.data and game.data.pokemon
+      local definition = pokemon and pokemon[mon.species]
+      party[#party + 1] = {
+        top = ("%s  LV%s"):format(
+          tostring(mon.nickname or mon.species or "POK\195\169MON"),
+          tostring(mon.level or "?")),
+        bottom = tostring(definition and definition.name
+          or mon.species or "POK\195\169MON"):gsub("_", " "),
+      }
+    end
+    screen.title = "NUZLOCKE COMPLETE"
+    screen.action = "CONTINUE PLAYING"
+    screen.secondaryAction = "RETURN TO TITLE"
+    table.insert(screen.pages, 2, { name = "FINAL PARTY", entries = party })
+    screen.onPrimary = function(self)
+      local stack = game and game.stack
+      if stack and type(stack.top) == "function" and stack:top() == self then
+        stack:pop()
+      end
+    end
+    screen.onSecondary = function()
+      if game and game.returnToTitle then game:returnToTitle() end
+    end
+    return screen
+  end
+
+  mod.exports.runReport = {
+    newFailedScreen = newFailedScreen,
+    newCompletedScreen = newCompletedScreen,
+  }
 
   mod.events:on("pokemon.caught", function(ev)
     if not active() then return end

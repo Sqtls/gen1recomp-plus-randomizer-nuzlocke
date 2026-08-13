@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.17.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.18.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -32,7 +32,7 @@ scaled, and a failed run ends with a complete run report.
 - [Installation](#installation)
 - [Configuring a run](#configuring-a-run)
 - [Encounter rules](#encounter-rules)
-- [Permadeath and failed runs](#permadeath-and-failed-runs)
+- [Permadeath and run endings](#permadeath-and-run-endings)
 - [Level caps](#level-caps)
 - [Level scaling](#level-scaling)
 - [Additional challenge rules](#additional-challenge-rules)
@@ -58,6 +58,7 @@ scaled, and a failed run ends with a complete run report.
 | Set mode | Can permanently enforce `SET` battle style. |
 | No battle items | Can forbid every manually used battle item except Poké Balls. |
 | Run reports | Records catches, encounter failures, deaths, badges, and play time for the failed-run screen. |
+| Successful ending | Marks the run complete after defeating Red and presents the final party and full run report. |
 
 ## Installation
 
@@ -219,7 +220,7 @@ An AREA Egg is recorded only after it successfully enters the party. A full
 party or blocked collection leaves the Egg retryable and does not consume the
 landmark.
 
-## Permadeath and failed runs
+## Permadeath and run endings
 
 When `PERMADEATH` is enabled, a party Pokémon that faints after the run begins
 is removed when the battle finishes. The same rule applies to overworld poison
@@ -251,6 +252,16 @@ action is `RESTART GAME`; B cannot return to the deleted save.
 
 Use Left/Right to change pages and Up/Down to scroll longer histories. Upgraded
 runs clearly mark history from before journalling support as unrecorded.
+
+### Successful-run report
+
+Defeating Red completes the Nuzlocke exactly once. After the battle finishes,
+the completion screen shows the surviving final party alongside the run's
+badges, play time, catches, failed encounters, and memorial.
+
+- `A` continues playing without deleting the save.
+- `B` returns to the title without deleting the save.
+- Red rematches cannot complete or report the same run again.
 
 ## Level caps
 
@@ -349,7 +360,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.17.0 |
+| Current mod version | 0.18.0 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly
