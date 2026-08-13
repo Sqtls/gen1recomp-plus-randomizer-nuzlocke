@@ -99,6 +99,7 @@ function StrictEncounters.install(mod)
   end)
 
   local battles = setmetatable({}, { __mode = "k" })
+  local originalShinies = setmetatable({}, { __mode = "k" })
   local activeBattle
 
   local function enabled(game)
@@ -175,13 +176,14 @@ function StrictEncounters.install(mod)
       and not battle.tutorial and battleType ~= 3 and not contest
   end
 
-  local function shiny(battle, mon)
-    if setting(mod, "shiny_clause", true) ~= true then return false end
-    local function marked(candidate)
-      candidate = candidate and (candidate.mon or candidate)
-      return candidate ~= nil and candidate.shiny == true
-    end
-    return marked(mon) or marked(battle and battle.enemy)
+  local function isShiny(candidate)
+    candidate = candidate and (candidate.mon or candidate)
+    return candidate ~= nil and candidate.shiny == true
+  end
+
+  local function shinyClauseExempts(battle)
+    return setting(mod, "shiny_clause", true) == true
+      and originalShinies[battle] == true
   end
 
   local function family(data, species)
@@ -229,7 +231,8 @@ function StrictEncounters.install(mod)
         or not eligibleBattle(battle, game, ev) then return end
 
     activeBattle = battle
-    if shiny(battle) then return end
+    originalShinies[battle] = isShiny(battle.enemy)
+    if shinyClauseExempts(battle) then return end
     local key, mapId = canonicalArea(game)
     local existing = ledger()[key]
     local species = ev.species or battle.enemy and battle.enemy.species
@@ -254,6 +257,7 @@ function StrictEncounters.install(mod)
 
   mod.events:on("battle.ended", function(ev)
     local battle = ev and ev.battle
+    if battle then originalShinies[battle] = nil end
     if activeBattle == battle then activeBattle = nil end
     local record = battle and battles[battle]
     if not record then return end
@@ -268,6 +272,7 @@ function StrictEncounters.install(mod)
 
   mod.events:on("pokemon.caught", function(ev)
     local battle = ev and ev.battle
+    if battle then originalShinies[battle] = nil end
     if activeBattle == battle then activeBattle = nil end
     local record = battle and battles[battle]
     if not record then return end
@@ -281,9 +286,9 @@ function StrictEncounters.install(mod)
     end
   end)
 
-  local function captureDenial(game, battle, mon)
+  local function captureDenial(game, battle)
     if not enabled(game) or not eligibleBattle(battle, game) then return nil end
-    if shiny(battle, mon) then return nil end
+    if shinyClauseExempts(battle) then return nil end
     local key = canonicalArea(game)
     local state = ledger()[key]
     local current = battles[battle]
@@ -315,7 +320,7 @@ function StrictEncounters.install(mod)
 
   mod.hooks:wrap("battle.catch_allowed", function(next, ctx)
     local game = ctx and ctx.game or mod.game
-    local denial = captureDenial(game, ctx and ctx.battle, ctx and ctx.mon)
+    local denial = captureDenial(game, ctx and ctx.battle)
     if denial then return false, denial end
     return next(ctx)
   end, 1000)
@@ -325,7 +330,7 @@ function StrictEncounters.install(mod)
   -- newer builds stop at the pre-throw hook above and never reach this one.
   mod.hooks:wrap("catch.rate", function(next, ball, mon, def, opts)
     local battle = opts and opts.battle or activeBattle
-    if captureDenial(mod.game, battle, mon) then return false, 0 end
+    if captureDenial(mod.game, battle) then return false, 0 end
     return next(ball, mon, def, opts)
   end, 1000)
 

@@ -331,12 +331,13 @@ local shinyOnCaughtRoute = {
 h:emit("battle.started", {
   battle = shinyOnCaughtRoute, kind = "wild", species = "HOOTHOOT",
 })
+shinyOnCaughtRoute.enemy.shiny = false
 delegated = false
 allowed = catchHook(function()
   delegated = true
   return true
 end, { game = game, battle = shinyOnCaughtRoute, species = "HOOTHOOT" })
-eq(allowed, true, "shiny bypasses an already-caught route")
+eq(allowed, true, "original shiny bypasses a route after Transform changes it")
 eq(delegated, true, "shiny catch delegates to Gold's normal ball path")
 eq(h.save.encounter_areas["LANDMARK:17"].species, "SENTRET",
   "shiny encounter does not replace the route's normal catch record")
@@ -359,9 +360,6 @@ eq(shinyScreen.save.inventory.FAST_BALL, 1,
   "v0.1.80 allows a ball to be thrown at the shiny")
 eq(shinyScreen.usedItem, "FAST_BALL",
   "shiny reaches the original v0.1.80 item-use path")
-h:emit("battle.ended", { battle = shinyOnCaughtRoute, result = "run" })
-eq(h.save.encounter_areas["LANDMARK:17"].status, "caught",
-  "leaving a shiny encounter does not alter the used route")
 settings.opts.onChoose(settings.items[3], settings)
 allowed = catchHook(function() return true end, {
   game = game, battle = shinyOnCaughtRoute, species = "HOOTHOOT",
@@ -372,6 +370,24 @@ allowed = catchHook(function() return true end, {
   game = game, battle = shinyOnCaughtRoute, species = "HOOTHOOT",
 })
 eq(allowed, true, "re-enabled shiny clause immediately restores exemption")
+h:emit("battle.ended", { battle = shinyOnCaughtRoute, result = "run" })
+eq(h.save.encounter_areas["LANDMARK:17"].status, "caught",
+  "leaving a shiny encounter does not alter the used route")
+
+local transformedNormal = {
+  wild = true,
+  enemy = { species = "DITTO", shiny = false },
+}
+h:emit("battle.started", {
+  battle = transformedNormal, kind = "wild", species = "DITTO",
+})
+transformedNormal.enemy.shiny = true
+allowed = catchHook(function() return true end, {
+  game = game, battle = transformedNormal, species = "DITTO",
+})
+eq(allowed, false,
+  "normal encounter cannot gain shiny exemption by Transforming")
+h:emit("battle.ended", { battle = transformedNormal, result = "run" })
 
 -- Dupes checks the complete evolution family and remembers catches even if
 -- that Pokemon later leaves the party. SKIP preserves the route but forbids

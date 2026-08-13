@@ -138,6 +138,7 @@ local shiny = {
 run.loader.events:emit("battle.started", {
   battle = shiny, kind = "wild", species = "HOOTHOOT",
 })
+shiny.enemy.shiny = false
 allowed = run.loader.hooks:call("battle.catch_allowed",
   function() return true end,
   { game = game, battle = shiny, species = "HOOTHOOT" })
@@ -155,6 +156,23 @@ run.loader.events:emit("pokemon.caught", {
 assert(areas["LANDMARK:16"].species == "SENTRET"
     and areas["LANDMARK:16"].status == "caught",
   "shiny catch must not replace the landmark's normal encounter record")
+
+local transformedNormal = {
+  wild = true,
+  enemy = { species = "DITTO", shiny = false },
+}
+run.loader.events:emit("battle.started", {
+  battle = transformedNormal, kind = "wild", species = "DITTO",
+})
+transformedNormal.enemy.shiny = true
+allowed = run.loader.hooks:call("battle.catch_allowed",
+  function() return true end,
+  { game = game, battle = transformedNormal, species = "DITTO" })
+assert(allowed == false,
+  "Transform cannot grant shiny-clause exemption to a normal encounter")
+run.loader.events:emit("battle.ended", {
+  battle = transformedNormal, result = "run",
+})
 
 local deadOne = { species = "SENTRET", nickname = "SCOUT", level = 8, hp = 0 }
 local deadTwo = { species = "HOOTHOOT", level = 7, hp = 0 }
@@ -203,4 +221,4 @@ assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
   "rescued Pokemon must leave its box without reordering the rest")
 
 run.release()
-print("production loader integration: 26 checks passed")
+print("production loader integration: 27 checks passed")
