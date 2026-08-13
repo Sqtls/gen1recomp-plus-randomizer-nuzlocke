@@ -56,7 +56,32 @@ local game = {
     party = { dead, survivor }, boxes = {}, inventory = { REVIVE = 2 },
     mail = { party = { deadMail, survivorMail }, box = {} },
   },
-  data = { items = {}, pokemon = {} },
+  data = {
+    items = {},
+    moves = {},
+    pokemon = {
+      growthRates = {
+        GROWTH_MEDIUM_FAST = { numerator = 1, denominator = 1,
+          squared = 0, linear = 0, constant = 0 },
+      },
+      PIDGEY = {
+        name = "PIDGEY",
+        baseStats = { hp = 40, attack = 45, defense = 40, speed = 56,
+          specialAttack = 35, specialDefense = 35 },
+        types = { "NORMAL", "FLYING" },
+        growthRate = "GROWTH_MEDIUM_FAST",
+        levelMoves = {},
+      },
+      RATTATA = {
+        name = "RATTATA",
+        baseStats = { hp = 30, attack = 56, defense = 35, speed = 72,
+          specialAttack = 25, specialDefense = 35 },
+        types = { "NORMAL", "NORMAL" },
+        growthRate = "GROWTH_MEDIUM_FAST",
+        levelMoves = {},
+      },
+    },
+  },
   input = {
     wasPressed = function(_, key) return pressed[key] == true end,
   },
@@ -170,8 +195,10 @@ local wipedOne = { species = "CYNDAQUIL", level = 10, hp = 0 }
 local wipedTwo = { species = "SENTRET", level = 9, hp = 0 }
 local backup = { species = "HOOTHOOT", nickname = "NIGHT", level = 7, hp = 18 }
 local reserve = { species = "RATTATA", level = 6, hp = 14 }
+local boxedPriorityDayCare = { species = "PIDGEY", level = 5, hp = 12 }
 game.save.party = { wipedOne, wipedTwo }
 game.save.boxes = { [1] = { backup, reserve } }
+game.save.dayCare = { man = { mon = boxedPriorityDayCare }, lady = {} }
 local wipe = { wild = true, party = game.save.party, outcome = "lose" }
 emit("battle.fainted", { battle = wipe, battler = wipedOne,
   side = { index = 1, key = "player" } })
@@ -191,6 +218,9 @@ eq(game.save.party[1], backup, "first boxed Pokemon saves the run")
 eq(partyAtRespawn, backup, "backup is in the party before respawn handling")
 eq(#game.save.boxes[1], 1, "rescued Pokemon is removed from its box")
 eq(game.save.boxes[1][1], reserve, "remaining box order is preserved")
+eq(game.save.dayCare.man.mon, boxedPriorityDayCare,
+  "boxed Pokemon are rescued before Day-Care parents")
+game.save.dayCare = nil
 
 local egg = { species = "TOGEPI", isEgg = true, hp = 20 }
 local faintedBoxed = { species = "PIDGEY", hp = 0 }
@@ -212,6 +242,63 @@ eq(game.save.party[1], laterBackup,
   "rescue skips Eggs and fainted boxed Pokemon")
 eq(#game.save.boxes[1], 2, "skipped box contents remain untouched")
 eq(#game.save.boxes[2], 0, "living rescue is removed from its own box")
+
+-- Day-Care parents are owned reserves too. If every party and boxed Pokemon
+-- is gone, the first deposited parent is withdrawn without charging a fee.
+local dayCareDeath = { species = "RATTATA", level = 6, hp = 0 }
+local dayCareBackup = {
+  species = "PIDGEY", nickname = "NEST", level = 7,
+  experience = 8 ^ 3, hp = 1,
+  dvs = { attack = 8, defense = 8, speed = 8, special = 8 },
+  moves = { { id = "TACKLE", pp = 2, maxPp = 35 } },
+  item = "BERRY", happiness = 90, caughtLevel = 4,
+  ot = "BEN", otId = 1234,
+}
+local secondParent = {
+  species = "RATTATA", level = 6, experience = 6 ^ 3, hp = 1,
+  moves = {},
+}
+game.save.party = { dayCareDeath }
+game.save.boxes = {}
+game.save.player = { money = 0 }
+game.save.dayCare = {
+  man = { mon = dayCareBackup },
+  lady = { mon = secondParent },
+  compatible = true,
+  hasEgg = true,
+  egg = { species = "PIDGEY", isEgg = true },
+}
+saved.nuzlocke_game_over = nil
+local dayCareWipe = {
+  wild = true, party = game.save.party, outcome = "lose",
+}
+emit("battle.fainted", { battle = dayCareWipe, battler = dayCareDeath,
+  side = { index = 1, key = "player" } })
+BattleState.finishBattle({ game = game, save = game.save,
+  battle = dayCareWipe })
+eq(#game.save.party, 1,
+  "party wipe withdraws exactly one Day-Care Pokemon")
+eq(game.save.party[1].species, "PIDGEY",
+  "first Day-Care parent saves the run when boxes are empty")
+eq(game.save.party[1].nickname, "NEST",
+  "emergency withdrawal preserves the Day-Care nickname")
+eq(game.save.party[1].level, 8,
+  "emergency withdrawal applies accrued Day-Care experience")
+eq(game.save.party[1].moves[1].id, "TACKLE",
+  "emergency withdrawal preserves learned moves")
+eq(game.save.party[1].item, "BERRY",
+  "emergency withdrawal preserves the held item")
+eq(game.save.player.money, 0,
+  "emergency Day-Care withdrawal waives its normal fee")
+eq(game.save.dayCare.man.mon, nil,
+  "rescued parent is removed from its Day-Care slot")
+eq(game.save.dayCare.lady.mon, secondParent,
+  "second Day-Care parent remains deposited")
+eq(game.save.dayCare.hasEgg, true,
+  "an already waiting Day-Care Egg remains available")
+eq(saved.nuzlocke_game_over, nil,
+  "a Day-Care parent prevents game over")
+game.save.dayCare = nil
 
 saved.permadeath = false
 local disabledDeath = { species = "SENTRET", hp = 0 }
@@ -356,16 +443,23 @@ eq(#pushedScreens, 0,
 
 game.save.party = {}
 game.save.boxes = {}
+game.save.dayCare = {
+  man = {}, lady = {}, hasEgg = true,
+  egg = { species = "PIDGEY", isEgg = true },
+}
 saved.nuzlocke_game_over = nil
 pushedScreens = {}
 local deletesBeforeStrandedGameOver = saveDeletes
 emit("save.loaded", { save = game.save })
+eq(#game.save.party, 0,
+  "a waiting Day-Care Egg alone cannot rescue the run")
 eq(saved.nuzlocke_game_over, true,
   "v0.3.0 empty-party save with no backup becomes game over")
 eq(#pushedScreens, 1,
   "v0.3.0 stranded save opens the terminal screen on load")
 eq(saveDeletes, deletesBeforeStrandedGameOver + 1,
   "v0.3.0 stranded save is deleted when classified as game over")
+game.save.dayCare = nil
 
 local finalPoisonDeath = { species = "SENTRET", hp = 0 }
 game.save.party = { finalPoisonDeath }
