@@ -12,9 +12,9 @@
 </div>
 
 Turn Pokémon Gold into a configurable Nuzlocke where the rules are enforced by
-the game—not left to an honour system. Encounters are tracked by location,
-fainted Pokémon are permanently removed, levels are capped and scaled, and a
-failed run ends with a complete run report.
+the game instead of being left to an honour system. Encounters are tracked by
+location, fainted Pokémon are permanently removed, levels are capped and
+scaled, and a failed run ends with a complete run report.
 
 > [!IMPORTANT]
 > This mod is **Pokémon Gold only** and targets the Gen 2 support in
@@ -245,8 +245,8 @@ With level scaling enabled, Kanto progresses by badge count:
 | 4 | 64 |
 | 5 | 67 |
 | 6 | 70 |
-| 7 — Blue | 75 |
-| 8 — Red | 81 |
+| 7 (Blue) | 75 |
+| 8 (Red) | 81 |
 
 Defeating Red removes the level cap entirely.
 
