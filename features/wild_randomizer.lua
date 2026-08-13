@@ -48,13 +48,12 @@ local function roles(pokemon)
   return result
 end
 
-local function speciesPool(data, allowLegendaries)
+local function speciesPool(data, allowed)
   local pool = {}
   for species, definition in pairs(data and data.pokemon or {}) do
     local index = type(definition) == "table" and definition.index
     if type(index) == "number" and index >= 1 and index <= 251
-        and species ~= "UNOWN"
-        and (allowLegendaries or not LEGENDARIES[species]) then
+        and (not allowed or allowed(species)) then
       pool[#pool + 1] = species
     end
   end
@@ -87,19 +86,13 @@ function WildRandomizer.install(mod)
     return setting(mod, "wild_randomizer", "off") ~= "off"
   end
 
-  local function choose(data, source, scope, slot)
-    if not enabled() or not (data and data.pokemon and data.pokemon[source]) then
+  local function chooseSpecies(data, source, mode, scope, slot, allowed)
+    if mode == "off"
+        or not (data and data.pokemon and data.pokemon[source]) then
       return source
     end
-    -- Gold's Unown form gate assumes every Unown slot is in the Ruins. Keeping
-    -- those slots unchanged prevents randomized routes from silently yielding
-    -- no encounter before the first puzzle is solved.
-    if source == "UNOWN" then return source end
-    local allowLegendaries = setting(mod, "wild_legendaries", "exclude")
-      == "allow"
-    local pool = speciesPool(data, allowLegendaries)
+    local pool = speciesPool(data, allowed)
     if #pool == 0 then return source end
-    local mode = setting(mod, "wild_randomizer", "off")
     if mode == "chaos" then
       local index = (hash(seed(), scope) + (slot or 1) - 1) % #pool + 1
       if pool[index] == source and #pool > 1 then index = index % #pool + 1 end
@@ -141,6 +134,22 @@ function WildRandomizer.install(mod)
     local key = table.concat({ scope, tostring(slot or 1), source }, "|")
     local index = hash(seed(), key) % #pool + 1
     return pool[index] or source
+  end
+
+  local function choose(data, source, scope, slot)
+    if not enabled() then return source end
+    -- Gold's Unown form gate assumes every Unown slot is in the Ruins. Keeping
+    -- those slots unchanged prevents randomized routes from silently yielding
+    -- no encounter before the first puzzle is solved.
+    if source == "UNOWN" then return source end
+    local allowLegendaries = setting(mod, "wild_legendaries", "exclude")
+      == "allow"
+    return chooseSpecies(data, source,
+      setting(mod, "wild_randomizer", "off"), scope, slot,
+      function(species)
+        return species ~= "UNOWN"
+          and (allowLegendaries or not LEGENDARIES[species])
+      end)
   end
 
   local function transform(encounter, ctx, method)
@@ -232,6 +241,7 @@ function WildRandomizer.install(mod)
   mod.exports.wildRandomizer = {
     seed = seed,
     choose = choose,
+    chooseSpecies = chooseSpecies,
     legendary = function(species) return LEGENDARIES[species] == true end,
   }
 end

@@ -29,6 +29,8 @@ local files = {
     read("features/breeding_eggs.lua"),
   ["mods/strict/features/wild_randomizer.lua"] =
     read("features/wild_randomizer.lua"),
+  ["mods/strict/features/static_randomizer.lua"] =
+    read("features/static_randomizer.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
   ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
   ["mods/strict/features/forced_set_mode.lua"] =
@@ -60,8 +62,8 @@ assert(hooks:depth("trainer.party") == 1,
   "loaded mod must scale trainer rosters through the public hook")
 assert(hooks:depth("ui.options.rows") == 1,
   "loaded mod must lock Gold's Battle Style option")
-assert(hooks:depth("script.command") == 1,
-  "loaded mod must detect scripted static encounter origins")
+assert(hooks:depth("script.command") == 2,
+  "loaded mod must detect and randomize scripted static encounters")
 assert(hooks:depth("encounter.species") == 1,
   "loaded mod must randomize ordinary wild encounter slots")
 assert(hooks:depth("encounter.fishing") == 1,
@@ -231,6 +233,20 @@ local randomized = run.loader.hooks:call("encounter.species",
 assert(randomized.species == "HOOTHOOT" and randomized.level == 3,
   "production wild hook must replace species without changing its level")
 bucket.wild_randomizer = "off"
+
+bucket.static_randomizer = "chaos"
+bucket.static_legendaries = "match"
+local staticCommand
+run.loader.hooks:call("script.command",
+  function(_, _, _, cmd) staticCommand = cmd end,
+  { generation = 2, mapId = "ROUTE_36", scriptKey = "44:5770",
+    object = 7 },
+  "loadwildmon", {},
+  { op = "loadwildmon", species = 161, level = 20 })
+assert(staticCommand.species == 163 and staticCommand.level == 20,
+  "production static hook must replace species without changing its level")
+run.loader.events:emit("script.ended", {})
+bucket.static_randomizer = "off"
 
 game.save.inventory.FAST_BALL = 1
 run.loader.hooks:call("input.step", function() end, game, 1 / 60)
@@ -463,4 +479,4 @@ assert(#game.save.party == 1 and game.save.party[1] == backup,
   "completion must preserve the surviving final party")
 
 run.release()
-print("production loader integration: 41 checks passed")
+print("production loader integration: 42 checks passed")

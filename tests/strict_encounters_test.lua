@@ -34,6 +34,7 @@ package.loaded[worldModule] = {
 
 local function newMod(savedValues)
   local hookChains = {}
+  local hookEntries = {}
   local listeners = {}
   local saveValues = savedValues or {}
   local currentMap = "ROUTE_29"
@@ -50,7 +51,26 @@ local function newMod(savedValues)
       },
     },
     hooks = {
-      wrap = function(_, name, callback) hookChains[name] = callback end,
+      wrap = function(_, name, callback, priority)
+        local entries = hookEntries[name] or {}
+        hookEntries[name] = entries
+        entries[#entries + 1] = {
+          callback = callback, priority = priority or 0,
+        }
+        table.sort(entries, function(left, right)
+          return left.priority > right.priority
+        end)
+        hookChains[name] = function(vanilla, ...)
+          local function run(index, ...)
+            local entry = entries[index]
+            if not entry then return vanilla(...) end
+            return entry.callback(function(...)
+              return run(index + 1, ...)
+            end, ...)
+          end
+          return run(1, ...)
+        end
+      end,
     },
     events = {
       on = function(_, name, callback)
@@ -167,6 +187,17 @@ eq(intro[15].choices[1], "EXCLUDE",
   "ordinary wild legendaries default to excluded")
 eq(intro[15].choices[2], "ALLOW",
   "Oak can allow legendary ordinary wilds")
+eq(intro[16].saveKey, "static_randomizer",
+  "Oak asks how scripted static Pokemon are randomized")
+eq(intro[16].choices[1], "OFF", "static randomization defaults to off")
+eq(intro[16].choices[2], "BALANCED", "Oak offers balanced statics")
+eq(intro[16].choices[3], "CHAOS", "Oak offers chaotic statics")
+eq(intro[17].saveKey, "static_legendaries",
+  "Oak asks how static legendary species map")
+eq(intro[17].choices[1], "MATCH",
+  "static legendaries default to legendary matching")
+eq(intro[17].choices[2], "ANY",
+  "Oak can allow unrestricted static legendary mapping")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -209,6 +240,12 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "wild_legendaries", value = "exclude",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "static_randomizer", value = "balanced",
+})
+h:emit("intro.oak_speech.answered", {
+  saveKey = "static_legendaries", value = "match",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -230,6 +267,10 @@ eq(h.save.wild_randomizer, "balanced",
   "new-run wild randomizer mode is persisted")
 eq(h.save.wild_legendaries, "exclude",
   "new-run ordinary-wild legendary policy is persisted")
+eq(h.save.static_randomizer, "balanced",
+  "new-run static randomizer mode is persisted")
+eq(h.save.static_legendaries, "match",
+  "new-run static legendary policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -341,10 +382,30 @@ eq(settings.items[14].right, "ALLOW",
 settings.opts.onChoose(settings.items[14], settings)
 eq(h.save.wild_legendaries, "exclude",
   "ordinary wild legendary policy cycles to EXCLUDE")
-local visibleSeed = tonumber(settings.items[15].right)
-eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+eq(settings.items[15].right, "BALANCED",
+  "active settings show balanced static randomization")
 settings.opts.onChoose(settings.items[15], settings)
-eq(tonumber(settings.items[15].right), visibleSeed,
+eq(h.save.static_randomizer, "chaos", "static randomizer can change to CHAOS")
+eq(settings.items[15].right, "CHAOS", "chaos static mode is displayed")
+settings.opts.onChoose(settings.items[15], settings)
+eq(h.save.static_randomizer, "off", "static randomizer can change to OFF")
+settings.opts.onChoose(settings.items[15], settings)
+eq(h.save.static_randomizer, "balanced",
+  "static randomizer cycles back to BALANCED")
+eq(settings.items[16].right, "MATCH",
+  "static legendaries default to matched mapping")
+settings.opts.onChoose(settings.items[16], settings)
+eq(h.save.static_legendaries, "any",
+  "static legendary mapping can be unrestricted")
+eq(settings.items[16].right, "ANY",
+  "unrestricted static legendary mapping is displayed")
+settings.opts.onChoose(settings.items[16], settings)
+eq(h.save.static_legendaries, "match",
+  "static legendary mapping cycles to MATCH")
+local visibleSeed = tonumber(settings.items[17].right)
+eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+settings.opts.onChoose(settings.items[17], settings)
+eq(tonumber(settings.items[17].right), visibleSeed,
   "the displayed seed is read-only")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps

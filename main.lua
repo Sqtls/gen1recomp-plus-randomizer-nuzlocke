@@ -21,6 +21,7 @@ return function(mod)
   install("features/gift_encounters.lua")
   install("features/breeding_eggs.lua")
   install("features/wild_randomizer.lua")
+  install("features/static_randomizer.lua")
   install("features/level_caps.lua")
   install("features/level_scaling.lua")
   install("features/forced_set_mode.lua")
@@ -29,6 +30,6 @@ return function(mod)
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "wild-randomizer-successful-ending-locked-rules-strict-encounters-permanent-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
+    status = "wild-and-static-randomizers-successful-ending-locked-rules-strict-encounters-permanent-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
   }
 end
