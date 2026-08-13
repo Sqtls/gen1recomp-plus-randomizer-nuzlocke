@@ -29,6 +29,8 @@ local files = {
     read("features/breeding_eggs.lua"),
   ["mods/strict/features/wild_randomizer.lua"] =
     read("features/wild_randomizer.lua"),
+  ["mods/strict/features/gift_randomizer.lua"] =
+    read("features/gift_randomizer.lua"),
   ["mods/strict/features/static_randomizer.lua"] =
     read("features/static_randomizer.lua"),
   ["mods/strict/features/starter_randomizer.lua"] =

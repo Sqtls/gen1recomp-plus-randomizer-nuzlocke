@@ -209,6 +209,17 @@ eq(intro[19].choices[1], "EXCLUDE",
   "legendary starters default to excluded")
 eq(intro[19].choices[2], "ALLOW",
   "Oak can allow legendary starters")
+eq(intro[20].saveKey, "gift_randomizer",
+  "Oak asks how gifted Pokemon are randomized")
+eq(intro[20].choices[1], "OFF", "gift randomization defaults to off")
+eq(intro[20].choices[2], "BALANCED", "Oak offers balanced gifts")
+eq(intro[20].choices[3], "CHAOS", "Oak offers chaotic gifts")
+eq(intro[21].saveKey, "gift_legendaries",
+  "Oak asks whether non-Egg gifts may become legendary")
+eq(intro[21].choices[1], "EXCLUDE",
+  "legendary gifts default to excluded")
+eq(intro[21].choices[2], "ALLOW",
+  "Oak can allow legendary gifts")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -263,6 +274,12 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "starter_legendaries", value = "exclude",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "gift_randomizer", value = "balanced",
+})
+h:emit("intro.oak_speech.answered", {
+  saveKey = "gift_legendaries", value = "exclude",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -292,6 +309,10 @@ eq(h.save.starter_randomizer, "balanced",
   "new-run starter randomizer mode is persisted")
 eq(h.save.starter_legendaries, "exclude",
   "new-run starter legendary policy is persisted")
+eq(h.save.gift_randomizer, "balanced",
+  "new-run gift randomizer mode is persisted")
+eq(h.save.gift_legendaries, "exclude",
+  "new-run gift legendary policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -444,10 +465,31 @@ eq(settings.items[18].right, "ALLOW",
 settings.opts.onChoose(settings.items[18], settings)
 eq(h.save.starter_legendaries, "exclude",
   "starter legendary policy cycles to EXCLUDE")
-local visibleSeed = tonumber(settings.items[19].right)
-eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+eq(settings.items[19].right, "BALANCED",
+  "active settings show balanced gift randomization")
 settings.opts.onChoose(settings.items[19], settings)
-eq(tonumber(settings.items[19].right), visibleSeed,
+eq(h.save.gift_randomizer, "chaos",
+  "gift randomizer can change to CHAOS")
+eq(settings.items[19].right, "CHAOS", "chaos gift mode is displayed")
+settings.opts.onChoose(settings.items[19], settings)
+eq(h.save.gift_randomizer, "off", "gift randomizer can change to OFF")
+settings.opts.onChoose(settings.items[19], settings)
+eq(h.save.gift_randomizer, "balanced",
+  "gift randomizer cycles back to BALANCED")
+eq(settings.items[20].right, "EXCLUDE",
+  "legendary gifts default to excluded")
+settings.opts.onChoose(settings.items[20], settings)
+eq(h.save.gift_legendaries, "allow",
+  "legendary gifts can be allowed")
+eq(settings.items[20].right, "ALLOW",
+  "allowed legendary gifts are displayed")
+settings.opts.onChoose(settings.items[20], settings)
+eq(h.save.gift_legendaries, "exclude",
+  "gift legendary policy cycles to EXCLUDE")
+local visibleSeed = tonumber(settings.items[21].right)
+eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+settings.opts.onChoose(settings.items[21], settings)
+eq(tonumber(settings.items[21].right), visibleSeed,
   "the displayed seed is read-only")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
