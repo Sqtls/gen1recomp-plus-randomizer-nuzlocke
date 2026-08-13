@@ -10,9 +10,11 @@ end
 
 local listeners = {}
 local World = {
+  load = function() end,
   poisonFaintScript = function(world)
     world.originalPoisonCalled = true
   end,
+  askYesNo = function() end,
 }
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[worldModule] = World

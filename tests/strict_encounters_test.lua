@@ -18,11 +18,16 @@ local legacyBattleState = {
   finishBattle = function(self)
     if self.onDone then return self.onDone() end
   end,
+  askNickname = function() end,
 }
 local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
 package.loaded[battleStateModule] = legacyBattleState
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
-package.loaded[worldModule] = { poisonFaintScript = function() end }
+package.loaded[worldModule] = {
+  load = function() end,
+  poisonFaintScript = function() end,
+  askYesNo = function() end,
+}
 
 local function newMod(savedValues)
   local hookChains = {}
@@ -123,6 +128,8 @@ eq(intro[2].saveKey, "strict_encounters",
 eq(intro[3].saveKey, "dupes_mode", "Oak asks for duplicate policy")
 eq(intro[4].saveKey, "shiny_clause", "Oak asks whether shinies are exempt")
 eq(intro[5].saveKey, "permadeath", "Oak asks whether permadeath is enabled")
+eq(intro[6].saveKey, "mandatory_nicknames",
+  "Oak asks whether nicknames are mandatory")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -135,10 +142,15 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "permadeath", value = true,
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "mandatory_nicknames", value = true,
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
 eq(h.save.permadeath, true, "new-run permadeath setting is persisted")
+eq(h.save.mandatory_nicknames, true,
+  "new-run mandatory nickname setting is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -170,6 +182,13 @@ settings.opts.onChoose(settings.items[4], settings)
 eq(h.save.permadeath, false, "active save can disable permadeath in-game")
 settings.opts.onChoose(settings.items[4], settings)
 eq(h.save.permadeath, true, "active save can re-enable permadeath in-game")
+eq(settings.items[5].right, "ON", "active settings show mandatory names")
+settings.opts.onChoose(settings.items[5], settings)
+eq(h.save.mandatory_nicknames, false,
+  "active save can disable mandatory names in-game")
+settings.opts.onChoose(settings.items[5], settings)
+eq(h.save.mandatory_nicknames, true,
+  "active save can re-enable mandatory names in-game")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.

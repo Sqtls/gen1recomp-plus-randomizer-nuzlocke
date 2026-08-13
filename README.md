@@ -5,8 +5,8 @@ in gen1recomp++, built one independently validated feature at a time.
 
 ## Status
 
-Strict first encounters, the dupes and shiny clauses, party permadeath, and
-failed-run reports are implemented.
+Strict first encounters, the dupes and shiny clauses, party permadeath,
+failed-run reports, and mandatory nicknames are implemented.
 
 - Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE` duplicate-family rule, and
   the shiny clause for each new run.
@@ -26,6 +26,15 @@ failed-run reports are implemented.
 - With `SHINY CLAUSE` enabled, a shiny bypasses used and failed route limits as
   well as both dupes modes. Catching or leaving it never consumes, repairs, or
   replaces the area's normal encounter record.
+- With `MANDATORY NAMES` enabled, every wild catch, starter, scripted gift,
+  hatched Egg, and Bug-Catching Contest reward must receive a nonblank nickname
+  different from its species name. Pre-nicknamed in-game trades already satisfy
+  the rule. Oak and `START` → `NUZLOCKE` both expose the setting, which defaults
+  to ON. Rejected blank and species-default entries show an inline explanation
+  and keep the naming screen open.
+
+Gold v0.1.80 is handled directly for starter/scripted-gift and wild-catch
+nickname flows because that build predates the public nickname hook call sites.
 
 Gold v0.1.80 lacks public hooks at several required enforcement boundaries, so
 this version uses `engine_internals` for Gold's ball use, battle finish, and
@@ -69,6 +78,7 @@ From the gen1recomp++ repository root:
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/strict_encounters_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/permadeath_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/run_report_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/mandatory_nicknames_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
 python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture
