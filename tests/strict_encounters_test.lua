@@ -198,6 +198,17 @@ eq(intro[17].choices[1], "MATCH",
   "static legendaries default to legendary matching")
 eq(intro[17].choices[2], "ANY",
   "Oak can allow unrestricted static legendary mapping")
+eq(intro[18].saveKey, "starter_randomizer",
+  "Oak asks how the three starters are randomized")
+eq(intro[18].choices[1], "OFF", "starter randomization defaults to off")
+eq(intro[18].choices[2], "BALANCED", "Oak offers balanced starters")
+eq(intro[18].choices[3], "CHAOS", "Oak offers chaotic starters")
+eq(intro[19].saveKey, "starter_legendaries",
+  "Oak asks whether starters may be legendary")
+eq(intro[19].choices[1], "EXCLUDE",
+  "legendary starters default to excluded")
+eq(intro[19].choices[2], "ALLOW",
+  "Oak can allow legendary starters")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -246,6 +257,12 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "static_legendaries", value = "match",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "starter_randomizer", value = "balanced",
+})
+h:emit("intro.oak_speech.answered", {
+  saveKey = "starter_legendaries", value = "exclude",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -271,6 +288,10 @@ eq(h.save.static_randomizer, "balanced",
   "new-run static randomizer mode is persisted")
 eq(h.save.static_legendaries, "match",
   "new-run static legendary policy is persisted")
+eq(h.save.starter_randomizer, "balanced",
+  "new-run starter randomizer mode is persisted")
+eq(h.save.starter_legendaries, "exclude",
+  "new-run starter legendary policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -402,10 +423,31 @@ eq(settings.items[16].right, "ANY",
 settings.opts.onChoose(settings.items[16], settings)
 eq(h.save.static_legendaries, "match",
   "static legendary mapping cycles to MATCH")
-local visibleSeed = tonumber(settings.items[17].right)
-eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+eq(settings.items[17].right, "BALANCED",
+  "active settings show balanced starter randomization")
 settings.opts.onChoose(settings.items[17], settings)
-eq(tonumber(settings.items[17].right), visibleSeed,
+eq(h.save.starter_randomizer, "chaos",
+  "starter randomizer can change to CHAOS")
+eq(settings.items[17].right, "CHAOS", "chaos starter mode is displayed")
+settings.opts.onChoose(settings.items[17], settings)
+eq(h.save.starter_randomizer, "off", "starter randomizer can change to OFF")
+settings.opts.onChoose(settings.items[17], settings)
+eq(h.save.starter_randomizer, "balanced",
+  "starter randomizer cycles back to BALANCED")
+eq(settings.items[18].right, "EXCLUDE",
+  "legendary starters default to excluded")
+settings.opts.onChoose(settings.items[18], settings)
+eq(h.save.starter_legendaries, "allow",
+  "legendary starters can be allowed")
+eq(settings.items[18].right, "ALLOW",
+  "allowed legendary starters are displayed")
+settings.opts.onChoose(settings.items[18], settings)
+eq(h.save.starter_legendaries, "exclude",
+  "starter legendary policy cycles to EXCLUDE")
+local visibleSeed = tonumber(settings.items[19].right)
+eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+settings.opts.onChoose(settings.items[19], settings)
+eq(tonumber(settings.items[19].right), visibleSeed,
   "the displayed seed is read-only")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps

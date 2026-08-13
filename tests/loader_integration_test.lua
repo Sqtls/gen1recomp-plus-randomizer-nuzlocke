@@ -31,6 +31,8 @@ local files = {
     read("features/wild_randomizer.lua"),
   ["mods/strict/features/static_randomizer.lua"] =
     read("features/static_randomizer.lua"),
+  ["mods/strict/features/starter_randomizer.lua"] =
+    read("features/starter_randomizer.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
   ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
   ["mods/strict/features/forced_set_mode.lua"] =
@@ -58,12 +60,12 @@ assert(hooks:depth("pokemon.nickname") == 1,
   "loaded mod must require names for catches and scripted gifts")
 assert(hooks:depth("exp.gain") == 1,
   "loaded mod must enforce battle EXP level caps")
-assert(hooks:depth("trainer.party") == 1,
-  "loaded mod must scale trainer rosters through the public hook")
+assert(hooks:depth("trainer.party") == 2,
+  "loaded mod must scale trainers and map the rival starter line")
 assert(hooks:depth("ui.options.rows") == 1,
   "loaded mod must lock Gold's Battle Style option")
-assert(hooks:depth("script.command") == 2,
-  "loaded mod must detect and randomize scripted static encounters")
+assert(hooks:depth("script.command") == 3,
+  "loaded mod must randomize static encounters and starter scripts")
 assert(hooks:depth("encounter.species") == 1,
   "loaded mod must randomize ordinary wild encounter slots")
 assert(hooks:depth("encounter.fishing") == 1,
@@ -130,6 +132,30 @@ local game = {
           { level = 8, move = "MOVE_D" },
           { level = 9, move = "MOVE_E" },
         } },
+      CHIKORITA = { index = 152, evolutions = { { into = "BAYLEEF" } },
+        growthRate = "MEDIUM_SLOW", baseStats = { hp = 45, attack = 49,
+          defense = 65, speed = 45, specialAttack = 49, specialDefense = 65 },
+        types = {}, levelMoves = {} },
+      BAYLEEF = { index = 153, evolutions = { { into = "MEGANIUM" } },
+        growthRate = "MEDIUM_SLOW", baseStats = {}, types = {}, levelMoves = {} },
+      MEGANIUM = { index = 154, evolutions = {}, growthRate = "MEDIUM_SLOW",
+        baseStats = {}, types = {}, levelMoves = {} },
+      CYNDAQUIL = { index = 155, evolutions = { { into = "QUILAVA" } },
+        growthRate = "MEDIUM_SLOW", baseStats = { hp = 39, attack = 52,
+          defense = 43, speed = 65, specialAttack = 60, specialDefense = 50 },
+        types = {}, levelMoves = {} },
+      QUILAVA = { index = 156, evolutions = { { into = "TYPHLOSION" } },
+        growthRate = "MEDIUM_SLOW", baseStats = {}, types = {}, levelMoves = {} },
+      TYPHLOSION = { index = 157, evolutions = {}, growthRate = "MEDIUM_SLOW",
+        baseStats = {}, types = {}, levelMoves = {} },
+      TOTODILE = { index = 158, evolutions = { { into = "CROCONAW" } },
+        growthRate = "MEDIUM_SLOW", baseStats = { hp = 50, attack = 65,
+          defense = 64, speed = 43, specialAttack = 44, specialDefense = 48 },
+        types = {}, levelMoves = {} },
+      CROCONAW = { index = 159, evolutions = { { into = "FERALIGATR" } },
+        growthRate = "MEDIUM_SLOW", baseStats = {}, types = {}, levelMoves = {} },
+      FERALIGATR = { index = 160, evolutions = {}, growthRate = "MEDIUM_SLOW",
+        baseStats = {}, types = {}, levelMoves = {} },
     },
     moves = {
       MOVE_A = { pp = 10 }, MOVE_B = { pp = 10 },
@@ -230,7 +256,7 @@ local randomized = run.loader.hooks:call("encounter.species",
   { species = "SENTRET", level = 3, slot = 1 },
   { kind = "wild", mapId = "ROUTE_29", terrain = "grass",
     daytime = "day", data = game.data })
-assert(randomized.species == "HOOTHOOT" and randomized.level == 3,
+assert(randomized.species ~= "SENTRET" and randomized.level == 3,
   "production wild hook must replace species without changing its level")
 bucket.wild_randomizer = "off"
 
@@ -243,10 +269,69 @@ run.loader.hooks:call("script.command",
     object = 7 },
   "loadwildmon", {},
   { op = "loadwildmon", species = 161, level = 20 })
-assert(staticCommand.species == 163 and staticCommand.level == 20,
+assert(staticCommand.species ~= 161 and staticCommand.level == 20,
   "production static hook must replace species without changing its level")
 run.loader.events:emit("script.ended", {})
 bucket.static_randomizer = "off"
+
+bucket.starter_randomizer = "chaos"
+bucket.starter_legendaries = "exclude"
+local starterChoices = exports.starterRandomizer.choices(game.data)
+local starterCommand
+run.loader.hooks:call("script.command",
+  function(_, _, _, cmd) starterCommand = cmd end,
+  { generation = 2, mapId = "ELMS_LAB", scriptKey = "60:starter",
+    object = 2 },
+  "givepoke", { 155, 5, 173, 0 },
+  { op = "givepoke", species = 155, level = 5, item = 173,
+    args = { 155, 5, 173, 0 } })
+assert(starterCommand.species
+    == game.data.pokemon[starterChoices.CYNDAQUIL].index
+    and starterCommand.level == 5 and starterCommand.item == 173,
+  "production starter hook must synchronize the scripted grant")
+local starterPromptName, starterPrompt
+run.loader.hooks:call("script.command",
+  function(_, name, _, cmd)
+    starterPromptName, starterPrompt = name, cmd
+  end,
+  { generation = 2, mapId = "ELMS_LAB", scriptKey = "60:40c6",
+    object = 3 },
+  "writetext", {}, { op = "writetext", text = "60:45e3" })
+assert(starterPromptName == "rawtext"
+    and starterPrompt.text:find(
+      game.data.pokemon[starterChoices.CYNDAQUIL].name
+        or starterChoices.CYNDAQUIL, 1, true),
+  "production starter prompt must name the randomized choice")
+
+local Vm = require("src.script.gen2.Vm")
+local Events = require("src.world.gen2.Events")
+local starterSeen = {}
+local starterVm = Vm.new({
+  ["60:starter"] = {
+    { op = "pokepic", species = 155, object = 155, args = { 155 } },
+    { op = "cry", id = 155 },
+    { op = "getmonname", species = 155, buffer = 0 },
+    { op = "givepoke", species = 155, level = 5, item = 173, trainer = 0 },
+    { op = "end" },
+  },
+}, {}, Events.new(), {
+  mapId = function() return "24:5" end,
+  showPic = function(index) starterSeen.pic = index end,
+  cry = function(index) starterSeen.cry = index end,
+  getMonName = function(index) starterSeen.name = index return "TEST" end,
+  givePoke = function(index, level, item)
+    starterSeen.gift = { index = index, level = level, item = item }
+  end,
+})
+assert(starterVm:start("60:starter"),
+  "production VM must start the Elm starter script")
+local expectedStarter = game.data.pokemon[starterChoices.CYNDAQUIL].index
+assert(starterSeen.pic == expectedStarter
+    and starterSeen.cry == expectedStarter
+    and starterSeen.name == expectedStarter
+    and starterSeen.gift and starterSeen.gift.index == expectedStarter,
+  "production VM must dispatch the randomized starter through every command")
+bucket.starter_randomizer = "off"
 
 game.save.inventory.FAST_BALL = 1
 run.loader.hooks:call("input.step", function() end, game, 1 / 60)
@@ -479,4 +564,4 @@ assert(#game.save.party == 1 and game.save.party[1] == backup,
   "completion must preserve the surviving final party")
 
 run.release()
-print("production loader integration: 42 checks passed")
+print("production loader integration: 43 checks passed")

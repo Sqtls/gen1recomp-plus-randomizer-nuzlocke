@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.20.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.21.2-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -22,8 +22,8 @@ scaled, and a failed run ends with a complete run report.
 > Pokémon Red, Blue, or Yellow.
 
 > [!NOTE]
-> Wild and static Pokémon randomization are implemented now. Roaming, trainer,
-> gift, item, move, ability, and evolution randomizers are planned as focused
+> Wild, static, and starter Pokémon randomization are implemented now. Roaming,
+> trainer, gift, item, move, ability, and evolution randomizers are planned as focused
 > follow-up features and are **not yet included** in the current release.
 
 ## Contents
@@ -33,6 +33,7 @@ scaled, and a failed run ends with a complete run report.
 - [Configuring a run](#configuring-a-run)
 - [Wild randomization](#wild-randomization)
 - [Static randomization](#static-randomization)
+- [Starter randomization](#starter-randomization)
 - [Encounter rules](#encounter-rules)
 - [Permadeath and run endings](#permadeath-and-run-endings)
 - [Level caps](#level-caps)
@@ -48,6 +49,7 @@ scaled, and a failed run ends with a complete run report.
 | Locked ruleset | Permanently locks every configured rule when the player first obtains a Ball. |
 | Seeded wild randomizer | Replaces ordinary wild species using balanced or unrestricted slot mappings that remain stable for the full run. |
 | Static randomizer | Replaces scripted static battles while optionally guaranteeing legendary-to-legendary mapping. |
+| Starter randomizer | Generates three unique starter choices and keeps the rival's starter line synchronized. |
 | Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
 | Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy, using every species ever owned during the run. |
 | Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
@@ -114,6 +116,8 @@ read-only summary of the active rules and current level cap.
 | `WILD LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether ordinary wild slots may become legendary Pokémon. |
 | `STATICS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls scripted static species randomization. |
 | `STATIC LEG` | `MATCH` | `MATCH` / `ANY` | Controls whether legendary status must match the original static encounter. |
+| `STARTERS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls the three starter species. |
+| `STARTER LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether a starter may be legendary or mythical. |
 | `SEED` | Generated | Read-only | Shows the stable seed used for this run's randomization. |
 
 ## Wild randomization
@@ -176,6 +180,30 @@ compatible.
 Static randomization and the `STATIC` Nuzlocke policy are separate settings.
 Randomization decides which Pokémon appears. `AREA`, `BONUS`, or `FORBID`
 still decides whether it may be caught and whether it consumes the area.
+
+## Starter randomization
+
+`STARTERS` generates three deterministic, unique choices for Elm's Lab.
+Revisiting a Ball or reloading the save cannot reroll the choices.
+
+| Mode | Behaviour |
+| --- | --- |
+| `OFF` | Preserves Chikorita, Cyndaquil, and Totodile. |
+| `BALANCED` | Replaces each original with a similar-BST base-stage Pokémon that can evolve. |
+| `CHAOS` | Chooses from the complete permitted Gen 1 and Gen 2 species pool without BST or evolution-stage limits. |
+
+`STARTER LEG` excludes legendary and mythical Pokémon by default. `ALLOW`
+adds them to the `CHAOS` pool. Balanced starters remain base-stage Pokémon, so
+the legendary option does not weaken that mode's evolution-stage rule.
+
+The Ball preview shows the replacement's front sprite, name, and cry before
+confirmation, and the received level 5 Pokémon is the same one shown. The
+normal mandatory-nickname and gift encounter policies still apply.
+
+Gold's rival continues to steal the starter from the original counter slot.
+That slot now contains its randomized species. Later rival battles advance
+through the replacement's first evolution path when one exists, while keeping
+the authored rival levels and all nonstarter party members unchanged.
 
 ## Encounter rules
 
@@ -430,7 +458,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.20.0 |
+| Current mod version | 0.21.2 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly
