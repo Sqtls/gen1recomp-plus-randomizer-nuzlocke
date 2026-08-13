@@ -34,6 +34,9 @@ function StrictEncounters.install(mod)
         { label = "STARTER LEG", value = "starter_legendaries" },
         { label = "GIFT MONS", value = "gift_randomizer" },
         { label = "GIFT LEG", value = "gift_legendaries" },
+        { label = "TRAINERS", value = "trainer_randomizer" },
+        { label = "TRAINER LEG", value = "trainer_legendaries" },
+        { label = "BOSSES", value = "trainer_bosses" },
         { label = "SEED", value = "randomizer_seed" },
         { label = "DONE", value = "done" },
       }
@@ -69,8 +72,11 @@ function StrictEncounters.install(mod)
         items[18].right = setting(mod, "starter_legendaries", "exclude"):upper()
         items[19].right = setting(mod, "gift_randomizer", "off"):upper()
         items[20].right = setting(mod, "gift_legendaries", "exclude"):upper()
+        items[21].right = setting(mod, "trainer_randomizer", "off"):upper()
+        items[22].right = setting(mod, "trainer_legendaries", "exclude"):upper()
+        items[23].right = setting(mod, "trainer_bosses", "include"):upper()
         local randomizer = mod.exports.wildRandomizer
-        items[21].right = tostring(randomizer and randomizer.seed() or "-")
+        items[24].right = tostring(randomizer and randomizer.seed() or "-")
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -163,6 +169,19 @@ function StrictEncounters.install(mod)
             mod.save:set("gift_legendaries",
               setting(mod, "gift_legendaries", "exclude") == "exclude"
                 and "allow" or "exclude")
+          elseif item.value == "trainer_randomizer" then
+            local current = setting(mod, "trainer_randomizer", "off")
+            mod.save:set("trainer_randomizer",
+              ({ off = "balanced", balanced = "chaos", chaos = "off" })[current]
+                or "off")
+          elseif item.value == "trainer_legendaries" then
+            mod.save:set("trainer_legendaries",
+              setting(mod, "trainer_legendaries", "exclude") == "exclude"
+                and "allow" or "exclude")
+          elseif item.value == "trainer_bosses" then
+            mod.save:set("trainer_bosses",
+              setting(mod, "trainer_bosses", "include") == "include"
+                and "exclude" or "include")
           end
           refresh()
         end,
@@ -301,6 +320,27 @@ function StrictEncounters.install(mod)
       choices = { "EXCLUDE", "ALLOW" },
       values = { "exclude", "allow" },
     })
+    mod.ui.insertStepAfter(result, "plus_gift_legendaries", {
+      id = "plus_trainer_randomizer", kind = "choice", pic = "oak",
+      saveKey = "trainer_randomizer",
+      text = "Randomize trainer\nPOK\195\169MON?",
+      choices = { "OFF", "BALANCED", "CHAOS" },
+      values = { "off", "balanced", "chaos" },
+    })
+    mod.ui.insertStepAfter(result, "plus_trainer_randomizer", {
+      id = "plus_trainer_legendaries", kind = "choice", pic = "oak",
+      saveKey = "trainer_legendaries",
+      text = "Allow LEGENDARIES\non trainer teams?",
+      choices = { "EXCLUDE", "ALLOW" },
+      values = { "exclude", "allow" },
+    })
+    mod.ui.insertStepAfter(result, "plus_trainer_legendaries", {
+      id = "plus_trainer_bosses", kind = "choice", pic = "oak",
+      saveKey = "trainer_bosses",
+      text = "Randomize major\nBOSS trainer teams?",
+      choices = { "INCLUDE", "EXCLUDE" },
+      values = { "include", "exclude" },
+    })
     return result
   end)
 
@@ -323,7 +363,10 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "starter_randomizer"
         or ev.saveKey == "starter_legendaries"
         or ev.saveKey == "gift_randomizer"
-        or ev.saveKey == "gift_legendaries") then
+        or ev.saveKey == "gift_legendaries"
+        or ev.saveKey == "trainer_randomizer"
+        or ev.saveKey == "trainer_legendaries"
+        or ev.saveKey == "trainer_bosses") then
       mod.save:set(ev.saveKey, ev.value)
       if ev.saveKey == "forced_set_mode" and ev.value == true then
         local rule = mod.exports.forcedSetMode
