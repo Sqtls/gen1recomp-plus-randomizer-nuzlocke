@@ -4,6 +4,11 @@ local Mon = require("src.battle.gen2.Mon")
 
 local STARTERS = { "CHIKORITA", "CYNDAQUIL", "TOTODILE" }
 local STARTER_INDEX = { CHIKORITA = 152, CYNDAQUIL = 155, TOTODILE = 158 }
+local STARTER_PROMPTS = {
+  ["60:45e3"] = { source = "CYNDAQUIL", prefix = "ELM: You'll take\n" },
+  ["60:460e"] = { source = "TOTODILE", prefix = "ELM: Do you want\n" },
+  ["60:463a"] = { source = "CHIKORITA", prefix = "ELM: So, you like\n" },
+}
 local RIVAL_LINE = {
   CHIKORITA = { source = "CHIKORITA", stage = 1 },
   BAYLEEF = { source = "CHIKORITA", stage = 2 },
@@ -79,17 +84,24 @@ function StarterRandomizer.install(mod)
 
   local starterOps = {
     pokepic = true, cry = true, getmonname = true, givepoke = true,
+    writetext = true,
   }
   mod.hooks:wrap("script.command", function(next, ctx, name, args, cmd)
     if not starterOps[name] or not ctx or ctx.mapId ~= "ELMS_LAB"
         or setting(mod, "starter_randomizer", "off") == "off" then
       return next(ctx, name, args, cmd)
     end
-    local sourceIndex = name == "cry" and cmd and cmd.id
-      or cmd and cmd.species or args and args[1]
     local source
-    for species, index in pairs(STARTER_INDEX) do
-      if index == sourceIndex then source = species break end
+    local prompt = name == "writetext" and cmd
+      and STARTER_PROMPTS[cmd.text]
+    if prompt then
+      source = prompt.source
+    else
+      local sourceIndex = name == "cry" and cmd and cmd.id
+        or cmd and cmd.species or args and args[1]
+      for species, index in pairs(STARTER_INDEX) do
+        if index == sourceIndex then source = species break end
+      end
     end
     if not source then return next(ctx, name, args, cmd) end
     local data = mod.game and mod.game.data
@@ -97,6 +109,12 @@ function StarterRandomizer.install(mod)
     local definition = data and data.pokemon and data.pokemon[replacement]
     if not (definition and definition.index) then
       return next(ctx, name, args, cmd)
+    end
+    if prompt then
+      local rewritten = rewriteCommand(cmd, definition.index)
+      rewritten.op = "rawtext"
+      rewritten.text = prompt.prefix .. (definition.name or replacement) .. "?"
+      return next(ctx, "rawtext", {}, rewritten)
     end
     local rewritten = rewriteCommand(cmd, definition.index)
     local rewrittenArgs = args

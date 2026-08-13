@@ -289,6 +289,48 @@ assert(starterCommand.species
     == game.data.pokemon[starterChoices.CYNDAQUIL].index
     and starterCommand.level == 5 and starterCommand.item == 173,
   "production starter hook must synchronize the scripted grant")
+local starterPromptName, starterPrompt
+run.loader.hooks:call("script.command",
+  function(_, name, _, cmd)
+    starterPromptName, starterPrompt = name, cmd
+  end,
+  { generation = 2, mapId = "ELMS_LAB", scriptKey = "60:40c6",
+    object = 3 },
+  "writetext", {}, { op = "writetext", text = "60:45e3" })
+assert(starterPromptName == "rawtext"
+    and starterPrompt.text:find(
+      game.data.pokemon[starterChoices.CYNDAQUIL].name
+        or starterChoices.CYNDAQUIL, 1, true),
+  "production starter prompt must name the randomized choice")
+
+local Vm = require("src.script.gen2.Vm")
+local Events = require("src.world.gen2.Events")
+local starterSeen = {}
+local starterVm = Vm.new({
+  ["60:starter"] = {
+    { op = "pokepic", species = 155, object = 155, args = { 155 } },
+    { op = "cry", id = 155 },
+    { op = "getmonname", species = 155, buffer = 0 },
+    { op = "givepoke", species = 155, level = 5, item = 173, trainer = 0 },
+    { op = "end" },
+  },
+}, {}, Events.new(), {
+  mapId = function() return "ELMS_LAB" end,
+  showPic = function(index) starterSeen.pic = index end,
+  cry = function(index) starterSeen.cry = index end,
+  getMonName = function(index) starterSeen.name = index return "TEST" end,
+  givePoke = function(index, level, item)
+    starterSeen.gift = { index = index, level = level, item = item }
+  end,
+})
+assert(starterVm:start("60:starter"),
+  "production VM must start the Elm starter script")
+local expectedStarter = game.data.pokemon[starterChoices.CYNDAQUIL].index
+assert(starterSeen.pic == expectedStarter
+    and starterSeen.cry == expectedStarter
+    and starterSeen.name == expectedStarter
+    and starterSeen.gift and starterSeen.gift.index == expectedStarter,
+  "production VM must dispatch the randomized starter through every command")
 bucket.starter_randomizer = "off"
 
 game.save.inventory.FAST_BALL = 1

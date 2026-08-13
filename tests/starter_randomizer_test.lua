@@ -135,6 +135,11 @@ local gift = command({ op = "givepoke", species = 155, level = 5,
 eq(gift.cmd.species, replacement, "starter grant gives the replacement")
 eq(gift.cmd.level, 5, "starter grant preserves level 5")
 eq(gift.cmd.item, 173, "starter grant preserves the held Berry")
+local prompt = command({ op = "writetext", text = "60:45e3" })
+eq(prompt.cmd.op, "rawtext", "starter prompt becomes dynamic text")
+eq(prompt.cmd.text, "ELM: You'll take\n"
+    .. choices.CYNDAQUIL .. "?",
+  "starter prompt names the randomized choice")
 local elsewhere = command({ op = "givepoke", species = 155, level = 5 },
   { mapId = "GOLDENROD_CITY", scriptKey = "gift" })
 eq(elsewhere.cmd.species, 155,
