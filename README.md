@@ -5,7 +5,8 @@ in gen1recomp++, built one independently validated feature at a time.
 
 ## Status
 
-Strict first encounters and party permadeath are implemented.
+Strict first encounters, party permadeath, and failed-run reports are
+implemented.
 
 - Oak configures `1ST ENCOUNTER` and the `SKIP`/`LOSE` duplicate-family rule
   for each new run.
@@ -38,6 +39,18 @@ screen. Empty-party saves produced by v0.3.0 are repaired into the same
 rescue-or-game-over state when loaded. Overworld poison faints follow the same
 rule.
 
+The failed-run screen has three pages navigated with Left/Right:
+
+- `SUMMARY` shows all Johto/Kanto badges, play time, catches, failed
+  encounters, and known deaths.
+- `ENCOUNTERS` lists successful catches and strict encounter failures with
+  their Gold landmark and failure reason.
+- `MEMORIAL` lists each lost Pokémon's nickname, level, and death location.
+
+Up/Down scrolls longer histories. `RESTART GAME` remains the only action and B
+cannot dismiss the report. New runs keep a complete journal in the save;
+upgraded active runs clearly mark history from before v0.4.0 as unrecorded.
+
 ## Principles
 
 - Gold only; no Gen 1 compatibility layer.
@@ -52,6 +65,7 @@ From the gen1recomp++ repository root:
 ```sh
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/strict_encounters_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/permadeath_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/run_report_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
 python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture

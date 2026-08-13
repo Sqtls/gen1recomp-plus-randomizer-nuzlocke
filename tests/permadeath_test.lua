@@ -310,15 +310,21 @@ eq(gameOverScreen.title, "NUZLOCKE FAILED",
   "terminal screen clearly announces the failed run")
 eq(gameOverScreen.action, "RESTART GAME",
   "terminal screen has one restart action")
+eq(gameOverScreen.pages and gameOverScreen.pages[2].name, "ENCOUNTERS",
+  "terminal screen includes the run report")
 drawn = {}
 gameOverScreen:draw()
 eq(drawn[1].text, "NUZLOCKE FAILED",
   "failed title is drawn")
 eq(drawn[1].x, 20,
   "failed title is horizontally centered")
-eq(drawn[3].text, "RESTART GAME",
-  "restart is the only drawn action")
-eq(drawn[2].x, 28,
+local restartIndex
+for index, call in ipairs(drawn) do
+  if call.text == "RESTART GAME" then restartIndex = index break end
+end
+eq(type(restartIndex), "number", "restart is the only drawn action")
+eq(drawn[restartIndex].x, 36, "restart label is centered with its cursor")
+eq(drawn[restartIndex - 1].x, 28,
   "restart row including its cursor is horizontally centered")
 local returnedToTitle = false
 game.returnToTitle = function() returnedToTitle = true end

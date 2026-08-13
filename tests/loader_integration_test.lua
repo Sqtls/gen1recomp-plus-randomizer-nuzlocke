@@ -16,6 +16,7 @@ local files = {
   ["mods/strict/features/strict_encounters.lua"] =
     read("features/strict_encounters.lua"),
   ["mods/strict/features/permadeath.lua"] = read("features/permadeath.lua"),
+  ["mods/strict/features/run_report.lua"] = read("features/run_report.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -86,6 +87,11 @@ local areas = bucket and bucket.encounter_areas
 assert(areas and areas["LANDMARK:16"]
     and areas["LANDMARK:16"].status == "caught",
   "first catch must consume the landmark encounter")
+assert(bucket.run_catches and #bucket.run_catches == 1,
+  "production mod.save must persist the catch journal")
+assert(bucket.run_catches[1].species == "SENTRET"
+    and bucket.run_catches[1].location == "ROUTE 29",
+  "catch journal must retain species and Gold location")
 
 local second = { wild = true, enemy = { species = "HOOTHOOT" } }
 run.loader.events:emit("battle.started", {
@@ -142,6 +148,11 @@ run.loader.events:emit("battle.fainted", {
 run.loader.events:emit("battle.fainted", {
   battle = wipe, battler = deadTwo, side = { index = 1, key = "player" },
 })
+assert(bucket.run_deaths and #bucket.run_deaths == 2,
+  "production mod.save must persist the memorial")
+assert(bucket.run_deaths[1].name == "SCOUT"
+    and bucket.run_deaths[1].location == "ROUTE 29",
+  "memorial must retain nickname and death location")
 
 local deathScreen = {
   game = game, save = game.save, battle = wipe, phase = "party",
@@ -167,4 +178,4 @@ assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
   "rescued Pokemon must leave its box without reordering the rest")
 
 run.release()
-print("production loader integration: 19 checks passed")
+print("production loader integration: 23 checks passed")
