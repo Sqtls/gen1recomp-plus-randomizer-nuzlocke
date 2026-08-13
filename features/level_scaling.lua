@@ -17,8 +17,10 @@ local function highestPartyLevel(party)
 end
 
 local function scaledLevel(vanilla, party, cap)
-  local floor = math.floor(highestPartyLevel(party) * 0.8)
-  return math.min(math.max(vanilla or 1, floor), cap or 100)
+  local random = love and love.math and love.math.random or math.random
+  local target = math.floor(highestPartyLevel(party) * 0.8)
+    + random(-2, 2)
+  return math.min(math.max(vanilla or 1, target), cap or 100)
 end
 
 local function rebuild(mon, data, level, preserveHp)

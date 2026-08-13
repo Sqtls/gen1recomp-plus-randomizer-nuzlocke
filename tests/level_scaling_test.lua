@@ -11,6 +11,16 @@ end
 local saved = {}
 local currentCap = 25
 local hooks = {}
+local variance = { -2, 0, 2 }
+local varianceIndex = 0
+local varianceEnabled = false
+love = { math = { random = function(low, high)
+  if not varianceEnabled then return 0 end
+  varianceIndex = varianceIndex + 1
+  local value = variance[varianceIndex] or 0
+  assert(value >= low and value <= high)
+  return value
+end } }
 local mod = {
   exports = { levelCaps = { current = function() return currentCap end } },
   save = { get = function(_, key, default)
@@ -66,6 +76,24 @@ local battle = Battle.new({
 })
 eq(battle.wild.level, 16,
   "wild levels use 80 percent of the highest non-Egg party member")
+
+mod.game.save.party[3].level = 25
+currentCap = 30
+varianceEnabled = true
+local varied = {}
+for index = 1, 3 do
+  local encounter = Battle.new({
+    data = mod.game.data,
+    party = mod.game.save.party,
+    wild = { species = "RATTATA", level = 5, moves = {}, dvs = {} },
+  })
+  varied[index] = encounter.wild.level
+end
+eq(table.concat(varied, ","), "18,20,22",
+  "repeated scaling varies by two levels around the 80 percent target")
+varianceEnabled = false
+mod.game.save.party[3].level = 20
+currentCap = 25
 
 battle = Battle.new({
   data = mod.game.data,
