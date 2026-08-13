@@ -52,6 +52,11 @@ local game = {
   },
   data = { items = {}, pokemon = {} },
 }
+local saveDeletes = 0
+game.deleteActiveSave = function()
+  saveDeletes = saveDeletes + 1
+  return true
+end
 
 local function read(relative)
   local file = assert(io.open(root .. "/" .. relative, "rb"))
@@ -244,6 +249,11 @@ game.save.boxes = {}
 saved.nuzlocke_game_over = nil
 pushedScreens = {}
 local terminalOrder = {}
+game.deleteActiveSave = function()
+  saveDeletes = saveDeletes + 1
+  terminalOrder[#terminalOrder + 1] = "delete_save"
+  return true
+end
 pushObserver = function()
   terminalOrder[#terminalOrder + 1] = "game_over"
 end
@@ -266,6 +276,8 @@ eq(#game.save.party, 0,
   "terminal wipe removes the final fainted Pokemon")
 eq(saved.nuzlocke_game_over, true,
   "terminal wipe records game over")
+eq(saveDeletes, 1,
+  "terminal wipe deletes the active save exactly once")
 eq(#pushedScreens, 1,
   "terminal wipe opens exactly one game-over screen")
 eq(pushedScreens[1] and pushedScreens[1].id,
@@ -273,14 +285,16 @@ eq(pushedScreens[1] and pushedScreens[1].id,
   "terminal wipe opens the Nuzlocke game-over screen")
 eq(respawnComplete, true,
   "blackout respawn completes before the game-over screen opens")
-eq(table.concat(terminalOrder, ","), "respawn,game_over",
-  "game-over screen opens after blackout respawn")
+eq(table.concat(terminalOrder, ","), "delete_save,respawn,game_over",
+  "save deletion happens before respawn and the game-over screen")
 
 local gameOverFactory = registeredScreens.Gen1RecompPlusNuzlockeGameOver
 eq(type(gameOverFactory), "table", "game-over screen is registered")
 local gameOverMenu = gameOverFactory.new(game)
 eq(gameOverMenu.title, "NUZLOCKE OVER",
   "terminal screen clearly announces game over")
+eq(gameOverMenu.items[1].label, "RETURN TO TITLE",
+  "terminal screen confirms the failed run's save was deleted")
 local pushesBeforeCancel = #pushedScreens
 gameOverMenu.opts.onCancel()
 eq(#pushedScreens, pushesBeforeCancel + 1,
@@ -306,11 +320,14 @@ game.save.party = {}
 game.save.boxes = {}
 saved.nuzlocke_game_over = nil
 pushedScreens = {}
+local deletesBeforeStrandedGameOver = saveDeletes
 emit("save.loaded", { save = game.save })
 eq(saved.nuzlocke_game_over, true,
   "v0.3.0 empty-party save with no backup becomes game over")
 eq(#pushedScreens, 1,
   "v0.3.0 stranded save opens the terminal screen on load")
+eq(saveDeletes, deletesBeforeStrandedGameOver + 1,
+  "v0.3.0 stranded save is deleted when classified as game over")
 
 local finalPoisonDeath = { species = "SENTRET", hp = 0 }
 game.save.party = { finalPoisonDeath }
@@ -318,6 +335,7 @@ game.save.boxes = {}
 saved.nuzlocke_game_over = nil
 pushedScreens = {}
 emit("save.created", { save = game.save })
+local deletesBeforePoisonGameOver = saveDeletes
 World.poisonFaintScript(world, { fainted = { 1 }, whiteout = true })
 eq(saved.nuzlocke_game_over, true,
   "terminal poison wipe records game over")
@@ -326,5 +344,32 @@ eq(#pushedScreens, 0,
 emit("map.entered", { mapId = "NEW_BARK_TOWN", via = "warp" })
 eq(#pushedScreens, 1,
   "poison game over opens after the whiteout warp")
+eq(saveDeletes, deletesBeforePoisonGameOver + 1,
+  "terminal poison wipe deletes the active save")
+
+local deletedVersion, deletedSlot
+local gameVersionModule = table.concat({ "src", "core", "GameVersion" }, ".")
+local saveDataModule = table.concat({ "src", "core", "SaveData" }, ".")
+package.loaded[gameVersionModule] = { get = function() return "gold" end }
+package.loaded[saveDataModule] = {
+  activeSlot = function(version)
+    eq(version, "gold", "v0.1.80 fallback resolves the Gold save")
+    return "slot7"
+  end,
+  deleteSlot = function(version, slot)
+    deletedVersion, deletedSlot = version, slot
+    return true
+  end,
+}
+game.deleteActiveSave = nil
+game.save.party = {}
+game.save.boxes = {}
+saved.nuzlocke_game_over = nil
+emit("save.created", { save = game.save })
+emit("save.loaded", { save = game.save })
+eq(deletedVersion, "gold",
+  "v0.1.80 fallback deletes from the Gold save registry")
+eq(deletedSlot, "slot7",
+  "v0.1.80 fallback deletes the active save slot")
 
 print(("permadeath: %d checks passed"):format(checks))

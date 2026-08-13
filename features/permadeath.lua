@@ -11,20 +11,53 @@ function Permadeath.install(mod)
   local deaths = setmetatable({}, { __mode = "k" })
   local shown = setmetatable({}, { __mode = "k" })
   local deferred = setmetatable({}, { __mode = "k" })
+  local saveDeleted = setmetatable({}, { __mode = "k" })
 
   local function enabled()
     return mod.save:get("nuzlocke_started") == true
       and setting(mod, "permadeath", true) == true
   end
 
+  local function deleteActiveSave(game)
+    if not game then return false end
+    if saveDeleted[game] then return true end
+
+    local ok, result = pcall(function()
+      if type(game.deleteActiveSave) == "function" then
+        return game:deleteActiveSave()
+      end
+
+      local SaveData = require("src.core.SaveData")
+      local version = require("src.core.GameVersion").get()
+      local slot = SaveData.activeSlot(version)
+      if slot then return SaveData.deleteSlot(version, slot) end
+
+      local fs = SaveData.persistenceFs()
+      local main = SaveData.saveFilename(version)
+      for _, path in ipairs({ main, main .. ".bak", main .. ".tmp" }) do
+        if fs.getInfo(path) and fs.remove(path) == false then return false end
+      end
+      return true
+    end)
+    if not ok or result == false then return false end
+    saveDeleted[game] = true
+    return true
+  end
+
   mod.content.screens:register(GAME_OVER_SCREEN, {
     new = function(game)
-      return mod.ui.ListMenu.new(game, "NUZLOCKE OVER", {
-        { label = "RETURN TO TITLE", value = "title" },
+      local menu
+      menu = mod.ui.ListMenu.new(game, "NUZLOCKE OVER", {
+        { label = saveDeleted[game] and "RETURN TO TITLE" or "DELETE SAVE",
+          value = "title" },
       }, {
         footer = "NO LIVING POK\195\169MON\nREMAIN IN PARTY OR PC.",
         onChoose = function()
-          if game.returnToTitle then game:returnToTitle() end
+          if deleteActiveSave(game) then
+            if game.returnToTitle then game:returnToTitle() end
+          else
+            menu.footer = "SAVE DELETE FAILED.\nA:RETRY"
+          end
         end,
         -- ListMenu pops on B before invoking this callback. Put the terminal
         -- screen straight back so an ended run cannot resume with no party.
@@ -32,6 +65,7 @@ function Permadeath.install(mod)
           mod.ui.push(game, GAME_OVER_SCREEN)
         end,
       })
+      return menu
     end,
   })
 
@@ -54,6 +88,7 @@ function Permadeath.install(mod)
       end
     end
     mod.save:set("nuzlocke_game_over", true)
+    deleteActiveSave(game)
     return "game_over"
   end
 
@@ -167,6 +202,7 @@ function Permadeath.install(mod)
   local function restoreTerminalState()
     local game = mod.game
     if mod.save:get("nuzlocke_game_over") == true then
+      deleteActiveSave(game)
       showGameOver(game)
       return
     end
@@ -180,11 +216,17 @@ function Permadeath.install(mod)
 
   mod.events:on("map.entered", restoreTerminalState)
   mod.events:on("save.loaded", function()
-    if mod.game then shown[mod.game] = nil end
+    if mod.game then
+      shown[mod.game] = nil
+      saveDeleted[mod.game] = nil
+    end
     restoreTerminalState()
   end)
   mod.events:on("save.created", function()
-    if mod.game then shown[mod.game] = nil end
+    if mod.game then
+      shown[mod.game] = nil
+      saveDeleted[mod.game] = nil
+    end
   end)
 end
 
