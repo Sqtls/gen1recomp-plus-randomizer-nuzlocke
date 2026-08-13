@@ -10,6 +10,7 @@ end
 
 local listeners = {}
 local World = {
+  load = function() end,
   poisonFaintScript = function(world)
     world.originalPoisonCalled = true
   end,

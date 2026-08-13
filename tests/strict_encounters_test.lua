@@ -18,11 +18,13 @@ local legacyBattleState = {
   finishBattle = function(self)
     if self.onDone then return self.onDone() end
   end,
+  askNickname = function() end,
 }
 local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
 package.loaded[battleStateModule] = legacyBattleState
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[worldModule] = {
+  load = function() end,
   poisonFaintScript = function() end,
   askYesNo = function() end,
 }

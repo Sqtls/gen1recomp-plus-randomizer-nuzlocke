@@ -36,20 +36,76 @@ function NamingScreen:accept()
   if self.onDone then self.onDone(self.text) end
 end
 
+local BattleState = {}
+function BattleState:askNickname(mon)
+  self.optionalNicknamePrompt = mon
+end
+function BattleState:answerNickname(answer)
+  self.forcedNicknameAnswer = answer
+end
+
 local asked = {}
 local World = {}
+function World:load()
+  self.game = { save = { party = {} } }
+  self.vm = {
+    givePokeFn = function()
+      self.game.save.party[1] = { species = "CYNDAQUIL" }
+    end,
+  }
+end
+function World:renameMon(mon, onDone, opts)
+  self.renamedMon = mon
+  self.renameOpts = opts
+  self.finishRename = onDone
+  return true
+end
 function World:askYesNo(onChoose)
   asked[#asked + 1] = self.lastText
   onChoose(false)
 end
 
 local namingModule = table.concat({ "src", "ui", "gen2", "Naming" .. "Screen" }, ".")
+local battleModule = table.concat({ "src", "ui", "gen2", "Battle" .. "State" }, ".")
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[namingModule] = NamingScreen
+package.loaded[battleModule] = BattleState
 package.loaded[worldModule] = World
 
 local feature = assert(loadfile(root .. "/features/mandatory_nicknames.lua"))()
 feature.install(mod)
+
+local legacyWorld = setmetatable({}, { __index = World })
+legacyWorld:load()
+local starterFinished = false
+local starterFlow = coroutine.create(function()
+  legacyWorld.vm.givePokeFn(155, 5, 0)
+  starterFinished = true
+end)
+legacyWorld.vm.co = starterFlow
+legacyWorld.vm.resume = function(self)
+  local ok, err = coroutine.resume(self.co)
+  assert(ok, err)
+end
+local ok, err = coroutine.resume(starterFlow)
+assert(ok, err)
+eq(legacyWorld.renamedMon and legacyWorld.renamedMon.species, "CYNDAQUIL",
+  "legacy Gold starter path must open nickname entry")
+eq(legacyWorld.renameOpts and legacyWorld.renameOpts.blank, true,
+  "legacy starter nickname entry starts blank")
+eq(starterFinished, false, "legacy starter script waits for nickname entry")
+legacyWorld.finishRename("EMBER")
+eq(legacyWorld.game.save.party[1].nickname, "EMBER",
+  "legacy starter stores the required nickname")
+eq(starterFinished, true, "legacy starter script resumes after naming")
+
+local caught = { species = "SENTRET" }
+local battleScreen = setmetatable({}, { __index = BattleState })
+battleScreen:askNickname(caught)
+eq(battleScreen.forcedNicknameAnswer, true,
+  "legacy Gold catch path must open nickname entry")
+eq(battleScreen.optionalNicknamePrompt, nil,
+  "legacy Gold catch path must skip the optional yes/no prompt")
 
 local nicknameHook = hookChains["pokemon.nickname"]
 eq(type(nicknameHook), "function", "mandatory nickname hook is installed")

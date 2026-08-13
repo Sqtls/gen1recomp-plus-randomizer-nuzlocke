@@ -36,10 +36,59 @@ function MandatoryNicknames.install(mod)
     return acceptName(screen, ...)
   end
 
+  local BattleState = require("src.ui.gen2.BattleState")
+  local askNickname = BattleState.askNickname
+  assert(type(askNickname) == "function",
+    "Gold caught-Pokemon nickname enforcement is unavailable; update this mod")
+
+  BattleState.askNickname = function(screen, mon, ...)
+    if enabled() then
+      screen.nicknameMon = mon
+      return screen:answerNickname(true)
+    end
+    return askNickname(screen, mon, ...)
+  end
+
   local World = require("src.world.gen2.World")
+  local loadWorld = World.load
   local askYesNo = World.askYesNo
-  assert(type(askYesNo) == "function",
+  assert(type(loadWorld) == "function" and type(askYesNo) == "function",
     "Gold overworld nickname enforcement is unavailable; update this mod")
+
+  World.load = function(world, ...)
+    local result = loadWorld(world, ...)
+    local vm = world.vm
+    local givePoke = vm and vm.givePokeFn
+    if type(givePoke) ~= "function" then return result end
+
+    vm.givePokeFn = function(...)
+      local save = world.game and world.game.save
+      local before = #(save and save.party or {})
+      local gift = givePoke(...)
+      -- Newer engines return this record and make the VM perform the same
+      -- blocking nickname flow through pokemon.nickname. v0.1.80 returns nil.
+      if not enabled() or type(gift) == "table" and gift.mon then return gift end
+
+      local party = save and save.party or {}
+      local mon = #party > before and party[#party] or nil
+      if not mon then return gift end
+
+      local finished = false
+      local opened = world:renameMon(mon, function(name)
+        if normalized(name) ~= ""
+            and normalized(name) ~= normalized(mon.name or mon.species) then
+          mon.nickname = name
+        end
+        finished = true
+        if vm.co and coroutine.status(vm.co) == "suspended" then vm:resume() end
+      end, { blank = true })
+      if opened and not finished and coroutine.running() then
+        coroutine.yield({ kind = "mandatory-nickname" })
+      end
+      return gift
+    end
+    return result
+  end
 
   World.askYesNo = function(world, onChoose, ...)
     local prompt = tostring(world and world.lastText or "")

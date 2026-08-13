@@ -6,9 +6,11 @@ package.loaded[battleStateModule] = {
   useItem = function() end,
   applyPartyItem = function() end,
   finishBattle = function() end,
+  askNickname = function() end,
 }
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[worldModule] = {
+  load = function() end,
   poisonFaintScript = function() end,
   askYesNo = function() end,
 }

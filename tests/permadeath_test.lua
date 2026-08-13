@@ -20,11 +20,13 @@ local BattleState = {
       return screen.onDone(screen.battle and screen.battle.outcome, screen.battle)
     end
   end,
+  askNickname = function() end,
 }
 local battleStateModule = table.concat({ "src", "ui", "gen2", "BattleState" }, ".")
 package.loaded[battleStateModule] = BattleState
 
 local World = {
+  load = function() end,
   poisonFaintScript = function(world)
     world.poisonPartyCount = #(world.game.save.party or {})
   end,

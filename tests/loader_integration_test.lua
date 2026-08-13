@@ -60,6 +60,14 @@ naming:accept()
 assert(chosenName == "EMBER",
   "production naming screen must accept a custom nickname")
 
+local BattleState = require("src.ui.gen2.BattleState")
+local forcedCatch
+BattleState.askNickname({
+  answerNickname = function(_, answer) forcedCatch = answer end,
+}, { species = "SENTRET" })
+assert(forcedCatch == true,
+  "production Gold catch path must skip the optional nickname prompt")
+
 local forcedEggName
 require("src.world.gen2.World").askYesNo({
   lastText = "Give a nickname to\nTOGEPI?",

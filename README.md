@@ -32,6 +32,9 @@ failed-run reports, and mandatory nicknames are implemented.
   the rule. Oak and `START` → `NUZLOCKE` both expose the setting, which defaults
   to ON.
 
+Gold v0.1.80 is handled directly for starter/scripted-gift and wild-catch
+nickname flows because that build predates the public nickname hook call sites.
+
 Gold v0.1.80 lacks public hooks at several required enforcement boundaries, so
 this version uses `engine_internals` for Gold's ball use, battle finish, and
 overworld poison-faint paths.
