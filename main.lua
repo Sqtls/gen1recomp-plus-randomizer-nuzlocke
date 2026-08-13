@@ -15,10 +15,11 @@ return function(mod)
   install("features/strict_encounters.lua")
   install("features/run_report.lua")
   install("features/permadeath.lua")
+  install("features/mandatory_nicknames.lua")
 
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "strict-encounters-shiny-clause-permadeath-and-run-reports",
+    status = "strict-encounters-shiny-clause-permadeath-run-reports-and-mandatory-nicknames",
   }
 end

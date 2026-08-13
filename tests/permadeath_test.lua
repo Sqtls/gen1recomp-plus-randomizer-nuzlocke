@@ -28,6 +28,7 @@ local World = {
   poisonFaintScript = function(world)
     world.poisonPartyCount = #(world.game.save.party or {})
   end,
+  askYesNo = function() end,
 }
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
 package.loaded[worldModule] = World

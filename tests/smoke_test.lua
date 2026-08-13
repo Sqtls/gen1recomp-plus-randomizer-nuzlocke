@@ -8,7 +8,10 @@ package.loaded[battleStateModule] = {
   finishBattle = function() end,
 }
 local worldModule = table.concat({ "src", "world", "gen2", "World" }, ".")
-package.loaded[worldModule] = { poisonFaintScript = function() end }
+package.loaded[worldModule] = {
+  poisonFaintScript = function() end,
+  askYesNo = function() end,
+}
 
 local function read(relative)
   local file = assert(io.open(root .. "/" .. relative, "rb"))
@@ -38,7 +41,7 @@ install(mod)
 assert(mod.exports.project.generation == 2, "project must target Gen 2")
 assert(mod.exports.project.game == "gold", "project must target Gold")
 assert(mod.exports.project.status
-    == "strict-encounters-shiny-clause-permadeath-and-run-reports",
+    == "strict-encounters-shiny-clause-permadeath-run-reports-and-mandatory-nicknames",
   "project must report its active feature set")
 
 print("project smoke test: 3 checks passed")

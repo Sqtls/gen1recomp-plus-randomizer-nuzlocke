@@ -17,6 +17,8 @@ local files = {
     read("features/strict_encounters.lua"),
   ["mods/strict/features/permadeath.lua"] = read("features/permadeath.lua"),
   ["mods/strict/features/run_report.lua"] = read("features/run_report.lua"),
+  ["mods/strict/features/mandatory_nicknames.lua"] =
+    read("features/mandatory_nicknames.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -34,6 +36,38 @@ assert(hooks:depth("ui.start_menu.items") == 1,
   "loaded mod must expose in-game settings")
 assert(hooks:depth("input.step") == 1,
   "loaded mod must watch for the first Ball acquisition")
+assert(hooks:depth("pokemon.nickname") == 1,
+  "loaded mod must require names for catches and scripted gifts")
+
+local nicknameRequired, nicknameDefault = run.loader.hooks:call(
+  "pokemon.nickname", function() return false, "CYNDAQUIL" end,
+  { source = "gift" })
+assert(nicknameRequired == true and nicknameDefault == "CYNDAQUIL",
+  "production hook must force starter/gift naming and preserve its default")
+
+local NamingScreen = require("src.ui.gen2.NamingScreen")
+local chosenName
+local naming = NamingScreen.new({}, {
+  type = "nickname", monName = "CYNDAQUIL",
+  onDone = function(name) chosenName = name end,
+})
+naming.text = "CYNDAQUIL"
+naming:accept()
+assert(chosenName == nil,
+  "production naming screen must reject the species default")
+naming.text = "EMBER"
+naming:accept()
+assert(chosenName == "EMBER",
+  "production naming screen must accept a custom nickname")
+
+local forcedEggName
+require("src.world.gen2.World").askYesNo({
+  lastText = "Give a nickname to\nTOGEPI?",
+}, function(answer)
+  forcedEggName = answer
+end)
+assert(forcedEggName == true,
+  "production overworld must force the egg naming path")
 
 local game = {
   data = {

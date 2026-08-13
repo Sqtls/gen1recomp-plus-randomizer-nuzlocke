@@ -15,6 +15,7 @@ function StrictEncounters.install(mod)
         { label = "DUPES", value = "dupes_mode" },
         { label = "SHINY CLAUSE", value = "shiny_clause" },
         { label = "PERMADEATH", value = "permadeath" },
+        { label = "MANDATORY NAMES", value = "mandatory_nicknames" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -23,6 +24,8 @@ function StrictEncounters.install(mod)
         items[2].right = setting(mod, "dupes_mode", "skip"):upper()
         items[3].right = setting(mod, "shiny_clause", true) and "ON" or "OFF"
         items[4].right = setting(mod, "permadeath", true) and "ON" or "OFF"
+        items[5].right = setting(mod, "mandatory_nicknames", true)
+          and "ON" or "OFF"
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -41,6 +44,9 @@ function StrictEncounters.install(mod)
               not setting(mod, "shiny_clause", true))
           elseif item.value == "permadeath" then
             mod.save:set("permadeath", not setting(mod, "permadeath", true))
+          elseif item.value == "mandatory_nicknames" then
+            mod.save:set("mandatory_nicknames",
+              not setting(mod, "mandatory_nicknames", true))
           elseif item.value == "done" then
             menu:close()
             return
@@ -75,13 +81,20 @@ function StrictEncounters.install(mod)
       saveKey = "permadeath", text = "Permanently lose\nfainted POK\195\169MON?",
       choices = { "ON", "OFF" }, values = { true, false },
     })
+    mod.ui.insertStepAfter(result, "plus_permadeath", {
+      id = "plus_mandatory_nicknames", kind = "choice", pic = "oak",
+      saveKey = "mandatory_nicknames",
+      text = "Require a nickname\nfor every POK\195\169MON?",
+      choices = { "ON", "OFF" }, values = { true, false },
+    })
     return result
   end)
 
   mod.events:on("intro.oak_speech.answered", function(ev)
     if ev and (ev.saveKey == "strict_encounters"
         or ev.saveKey == "dupes_mode" or ev.saveKey == "shiny_clause"
-        or ev.saveKey == "permadeath") then
+        or ev.saveKey == "permadeath"
+        or ev.saveKey == "mandatory_nicknames") then
       mod.save:set(ev.saveKey, ev.value)
     end
   end)
