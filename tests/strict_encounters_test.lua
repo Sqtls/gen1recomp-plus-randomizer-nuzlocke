@@ -150,6 +150,11 @@ eq(intro[12].saveKey, "gift_encounters",
   "Oak asks how gift encounters are handled")
 eq(intro[12].choices[1], "BONUS", "gifts default to bonus encounters")
 eq(intro[12].choices[2], "AREA", "Oak can make gifts consume their area")
+eq(intro[13].saveKey, "breeding_eggs",
+  "Oak asks how bred Eggs are handled")
+eq(intro[13].choices[1], "FORBID", "bred Eggs default to forbidden")
+eq(intro[13].choices[2], "AREA", "Oak offers one Day-Care area Egg")
+eq(intro[13].choices[3], "BONUS", "Oak offers unrestricted breeding")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -183,6 +188,9 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "gift_encounters", value = "bonus",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "breeding_eggs", value = "forbid",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -198,6 +206,8 @@ eq(h.save.static_encounters, "area",
   "new-run static encounter policy is persisted")
 eq(h.save.gift_encounters, "bonus",
   "new-run gift encounter policy is persisted")
+eq(h.save.breeding_eggs, "forbid",
+  "new-run breeding Egg policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -281,6 +291,14 @@ eq(h.save.gift_encounters, "area", "gift policy can change to AREA")
 eq(settings.items[11].right, "AREA", "area gift policy is displayed")
 settings.opts.onChoose(settings.items[11], settings)
 eq(h.save.gift_encounters, "bonus", "gift policy cycles back to BONUS")
+eq(settings.items[12].right, "FORBID", "bred Eggs default to forbidden")
+settings.opts.onChoose(settings.items[12], settings)
+eq(h.save.breeding_eggs, "area", "breeding policy can change to AREA")
+eq(settings.items[12].right, "AREA", "AREA breeding policy is displayed")
+settings.opts.onChoose(settings.items[12], settings)
+eq(h.save.breeding_eggs, "bonus", "breeding policy can change to BONUS")
+settings.opts.onChoose(settings.items[12], settings)
+eq(h.save.breeding_eggs, "forbid", "breeding policy cycles to FORBID")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.
