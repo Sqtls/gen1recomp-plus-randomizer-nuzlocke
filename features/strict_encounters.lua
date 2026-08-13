@@ -1,5 +1,6 @@
 local StrictEncounters = {}
 local SETTINGS_SCREEN = "Gen1RecompPlusNuzlockeSettings"
+local TextBox = require("src.render.TextBox")
 
 local function setting(mod, key, default)
   local value = mod.save:get(key)
@@ -8,8 +9,10 @@ local function setting(mod, key, default)
 end
 
 function StrictEncounters.install(mod)
+  local started
   mod.content.screens:register(SETTINGS_SCREEN, {
     new = function(game)
+      local locked = started(game)
       local items = {
         { label = "1ST ENCOUNTER", value = "strict_encounters" },
         { label = "DUPES", value = "dupes_mode" },
@@ -53,9 +56,16 @@ function StrictEncounters.install(mod)
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
         wrap = true,
-        footer = "A:CHANGE  B:BACK",
+        footer = locked and "LOCKED  B:BACK" or "A:CHANGE  B:BACK",
         onChoose = function(item, menu)
-          if item.value == "strict_encounters" then
+          if item.value == "done" then
+            menu:close()
+            return
+          elseif locked then
+            game.stack:push(TextBox.new(game,
+              "Rules are locked\nfor this run!"))
+            return
+          elseif item.value == "strict_encounters" then
             mod.save:set("strict_encounters",
               not setting(mod, "strict_encounters", true))
           elseif item.value == "dupes_mode" then
@@ -98,9 +108,6 @@ function StrictEncounters.install(mod)
             mod.save:set("breeding_eggs",
               ({ forbid = "area", area = "bonus", bonus = "forbid" })[current]
                 or "forbid")
-          elseif item.value == "done" then
-            menu:close()
-            return
           end
           refresh()
         end,
@@ -240,7 +247,7 @@ function StrictEncounters.install(mod)
     return setting(mod, "strict_encounters", true) == true
   end
 
-  local function started(game)
+  started = function(game)
     if mod.save:get("nuzlocke_started") == true then return true end
     local areas = mod.save:get("encounter_areas")
     if type(areas) == "table" then
