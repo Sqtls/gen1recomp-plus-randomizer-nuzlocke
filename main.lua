@@ -16,6 +16,7 @@ return function(mod)
   install("features/strict_encounters.lua")
   install("features/run_report.lua")
   install("features/permadeath.lua")
+  install("features/run_completion.lua")
   install("features/mandatory_nicknames.lua")
   install("features/gift_encounters.lua")
   install("features/breeding_eggs.lua")
@@ -27,6 +28,6 @@ return function(mod)
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "locked-rules-strict-encounters-permanent-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
+    status = "successful-ending-locked-rules-strict-encounters-permanent-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
   }
 end

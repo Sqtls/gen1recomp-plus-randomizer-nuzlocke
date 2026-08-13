@@ -19,6 +19,8 @@ local files = {
     read("features/strict_encounters.lua"),
   ["mods/strict/features/permadeath.lua"] = read("features/permadeath.lua"),
   ["mods/strict/features/run_report.lua"] = read("features/run_report.lua"),
+  ["mods/strict/features/run_completion.lua"] =
+    read("features/run_completion.lua"),
   ["mods/strict/features/mandatory_nicknames.lua"] =
     read("features/mandatory_nicknames.lua"),
   ["mods/strict/features/gift_encounters.lua"] =
@@ -402,5 +404,39 @@ assert(partyAtRespawn == backup,
 assert(#game.save.boxes[1] == 1 and game.save.boxes[1][1] == reserve,
   "rescued Pokemon must leave its box without reordering the rest")
 
+local completionScreen
+game.data.screens = game.data.screens or {}
+game.data.screens.Gen1RecompPlusNuzlockeComplete =
+  assert(run.loader.content.screens:get("Gen1RecompPlusNuzlockeComplete"))
+game.stack = {
+  push = function(_, state) completionScreen = state end,
+  top = function() return completionScreen end,
+  pop = function() completionScreen = nil end,
+}
+local redBattle = {
+  trainer = { classId = "RED" }, party = game.save.party, outcome = "win",
+  clearAllVolatiles = function() end,
+}
+run.loader.events:emit("battle.ended", {
+  battle = redBattle, result = "win",
+})
+assert(bucket.nuzlocke_completed == true,
+  "production Red victory must permanently complete the run")
+local redCallback = false
+local redScreen = {
+  game = game, save = game.save, battle = redBattle, phase = "party",
+  stopAlarm = function() end,
+  clearMenuCursors = function() end,
+  givePokerus = function() end,
+  onDone = function() redCallback = true end,
+}
+BattleState.finishBattle(redScreen)
+assert(redCallback == true,
+  "production completion must preserve Red's post-battle callback")
+assert(completionScreen and completionScreen.title == "NUZLOCKE COMPLETE",
+  "production completion must appear after battle cleanup")
+assert(#game.save.party == 1 and game.save.party[1] == backup,
+  "completion must preserve the surviving final party")
+
 run.release()
-print("production loader integration: 34 checks passed")
+print("production loader integration: 38 checks passed")

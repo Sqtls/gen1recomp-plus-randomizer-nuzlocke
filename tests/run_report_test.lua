@@ -261,4 +261,43 @@ screen:update()
 eq(deleted, 1, "restart confirms failed save deletion")
 eq(returnedToTitle, true, "restart returns to title")
 
+local survivor = {
+  species = "HOOTHOOT", nickname = "NIGHT", level = 81, hp = 150,
+}
+game.save.party = { survivor }
+local popped = 0
+local completion
+game.stack = {
+  top = function() return completion end,
+  pop = function() popped = popped + 1 end,
+}
+returnedToTitle = false
+completion = mod.exports.runReport.newCompletedScreen(game)
+eq(completion.title, "NUZLOCKE COMPLETE",
+  "successful report uses the completion title")
+eq(completion.pages[2].name, "FINAL PARTY",
+  "successful report includes a final-party page")
+eq(completion.pages[2].entries[1].top, "NIGHT  LV81",
+  "final party lists nickname and finishing level")
+eq(completion.pages[2].entries[1].bottom, "HOOTHOOT",
+  "final party retains the underlying species")
+drawn = {}
+completion:draw()
+local completedText = {}
+for _, call in ipairs(drawn) do
+  if call.text then completedText[call.text] = true end
+end
+eq(completedText["A: CONTINUE PLAYING"], true,
+  "successful report offers continued play")
+eq(completedText["B: RETURN TO TITLE"], true,
+  "successful report offers a title return")
+
+pressed = { a = true }
+completion:update()
+eq(popped, 1, "continue closes only the completion report")
+eq(returnedToTitle, false, "continue preserves the active game")
+pressed = { b = true }
+completion:update()
+eq(returnedToTitle, true, "title action leaves without deleting the save")
+
 print(("run report: %d checks passed"):format(checks))

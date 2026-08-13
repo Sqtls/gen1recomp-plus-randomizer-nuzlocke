@@ -45,7 +45,7 @@ install(mod)
 assert(mod.exports.project.generation == 2, "project must target Gen 2")
 assert(mod.exports.project.game == "gold", "project must target Gold")
 assert(mod.exports.project.status
-    == "locked-rules-strict-encounters-permanent-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
+    == "successful-ending-locked-rules-strict-encounters-permanent-dupes-shiny-static-gift-roaming-and-breeding-policies-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
   "project must report its active feature set")
 
 print("project smoke test: 3 checks passed")
