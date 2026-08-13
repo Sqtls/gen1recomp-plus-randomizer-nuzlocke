@@ -20,6 +20,7 @@ local files = {
   ["mods/strict/features/mandatory_nicknames.lua"] =
     read("features/mandatory_nicknames.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
+  ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -41,6 +42,8 @@ assert(hooks:depth("pokemon.nickname") == 1,
   "loaded mod must require names for catches and scripted gifts")
 assert(hooks:depth("exp.gain") == 1,
   "loaded mod must enforce battle EXP level caps")
+assert(hooks:depth("trainer.party") == 1,
+  "loaded mod must scale trainer rosters through the public hook")
 
 local nicknameRequired, nicknameDefault = run.loader.hooks:call(
   "pokemon.nickname", function() return false, "CYNDAQUIL" end,
@@ -88,9 +91,12 @@ local game = {
       FAST_BALL = { pocket = "BALL" },
     },
     pokemon = {
-      SENTRET = { evolutions = {}, growthRate = "MEDIUM_FAST" },
-      HOOTHOOT = { evolutions = {}, growthRate = "MEDIUM_FAST" },
+      SENTRET = { evolutions = {}, growthRate = "MEDIUM_FAST",
+        baseStats = {}, types = {}, levelMoves = {} },
+      HOOTHOOT = { evolutions = {}, growthRate = "MEDIUM_FAST",
+        baseStats = {}, types = {}, levelMoves = {} },
     },
+    moves = {},
   },
   save = { party = {}, boxes = {}, inventory = {} },
   world = { map = { id = "ROUTE_29" }, player = {} },
@@ -106,6 +112,20 @@ local cappedCandy = ItemEffects.useOnMon(
   "RARE_CANDY", { species = "SENTRET", level = 9 }, game.data)
 assert(cappedCandy.used == false,
   "production Gold Rare Candy path must refuse at the active cap")
+
+game.save.party = { { species = "CYNDAQUIL", level = 20, hp = 20 } }
+local scaledParty = run.loader.hooks:call("trainer.party",
+  function(_, _, party) return party end, "YOUNGSTER", 1,
+  { { species = "HOOTHOOT", level = 3, moves = {},
+      dvs = { attack = 8, defense = 8, speed = 8, special = 8 } } })
+assert(scaledParty[1].level == 9,
+  "production trainer hook must scale to the highest-party floor and cap")
+local Battle = require("src.battle.gen2.Battle")
+local scaledWild = Battle.new({ data = game.data, party = game.save.party,
+  wild = { species = "HOOTHOOT", level = 3, moves = {},
+    dvs = { attack = 8, defense = 8, speed = 8, special = 8 } } })
+assert(scaledWild.enemy.level == 9,
+  "production Gold wild battle path must apply party-based scaling")
 
 local menu = run.loader.hooks:call("ui.start_menu.items",
   function(_, items) return items end, game,

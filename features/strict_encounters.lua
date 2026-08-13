@@ -17,6 +17,7 @@ function StrictEncounters.install(mod)
         { label = "PERMADEATH", value = "permadeath" },
         { label = "MANDATORY NAMES", value = "mandatory_nicknames" },
         { label = "LEVEL CAPS", value = "level_caps" },
+        { label = "LEVEL SCALING", value = "level_scaling" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -34,6 +35,8 @@ function StrictEncounters.install(mod)
         else
           items[6].right = "OFF"
         end
+        items[7].right = setting(mod, "level_scaling", true)
+          and "ON" or "OFF"
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -57,6 +60,9 @@ function StrictEncounters.install(mod)
               not setting(mod, "mandatory_nicknames", true))
           elseif item.value == "level_caps" then
             mod.save:set("level_caps", not setting(mod, "level_caps", true))
+          elseif item.value == "level_scaling" then
+            mod.save:set("level_scaling",
+              not setting(mod, "level_scaling", true))
           elseif item.value == "done" then
             menu:close()
             return
@@ -103,6 +109,12 @@ function StrictEncounters.install(mod)
       text = "Cap levels at each\nmajor challenge?",
       choices = { "ON", "OFF" }, values = { true, false },
     })
+    mod.ui.insertStepAfter(result, "plus_level_caps", {
+      id = "plus_level_scaling", kind = "choice", pic = "oak",
+      saveKey = "level_scaling",
+      text = "Scale wild POK\195\169MON\nand trainer levels?",
+      choices = { "ON", "OFF" }, values = { true, false },
+    })
     return result
   end)
 
@@ -111,7 +123,8 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "dupes_mode" or ev.saveKey == "shiny_clause"
         or ev.saveKey == "permadeath"
         or ev.saveKey == "mandatory_nicknames"
-        or ev.saveKey == "level_caps") then
+        or ev.saveKey == "level_caps"
+        or ev.saveKey == "level_scaling") then
       mod.save:set(ev.saveKey, ev.value)
     end
   end)
