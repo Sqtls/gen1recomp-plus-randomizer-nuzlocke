@@ -20,6 +20,7 @@ local files = {
   ["mods/strict/features/mandatory_nicknames.lua"] =
     read("features/mandatory_nicknames.lua"),
   ["mods/strict/features/level_caps.lua"] = read("features/level_caps.lua"),
+  ["mods/strict/features/level_scaling.lua"] = read("features/level_scaling.lua"),
 }
 
 local Sdk = require("tests.modkit.sdk")
@@ -41,6 +42,8 @@ assert(hooks:depth("pokemon.nickname") == 1,
   "loaded mod must require names for catches and scripted gifts")
 assert(hooks:depth("exp.gain") == 1,
   "loaded mod must enforce battle EXP level caps")
+assert(hooks:depth("trainer.party") == 1,
+  "loaded mod must scale trainer rosters through the public hook")
 
 local nicknameRequired, nicknameDefault = run.loader.hooks:call(
   "pokemon.nickname", function() return false, "CYNDAQUIL" end,
@@ -88,8 +91,21 @@ local game = {
       FAST_BALL = { pocket = "BALL" },
     },
     pokemon = {
-      SENTRET = { evolutions = {}, growthRate = "MEDIUM_FAST" },
-      HOOTHOOT = { evolutions = {}, growthRate = "MEDIUM_FAST" },
+      SENTRET = { evolutions = {}, growthRate = "MEDIUM_FAST",
+        baseStats = {}, types = {}, levelMoves = {} },
+      HOOTHOOT = { evolutions = {}, growthRate = "MEDIUM_FAST",
+        baseStats = {}, types = {}, levelMoves = {
+          { level = 2, move = "MOVE_A" },
+          { level = 4, move = "MOVE_B" },
+          { level = 6, move = "MOVE_C" },
+          { level = 8, move = "MOVE_D" },
+          { level = 9, move = "MOVE_E" },
+        } },
+    },
+    moves = {
+      MOVE_A = { pp = 10 }, MOVE_B = { pp = 10 },
+      MOVE_C = { pp = 10 }, MOVE_D = { pp = 10 },
+      MOVE_E = { pp = 10 },
     },
   },
   save = { party = {}, boxes = {}, inventory = {} },
@@ -106,6 +122,42 @@ local cappedCandy = ItemEffects.useOnMon(
   "RARE_CANDY", { species = "SENTRET", level = 9 }, game.data)
 assert(cappedCandy.used == false,
   "production Gold Rare Candy path must refuse at the active cap")
+
+game.save.party = { { species = "CYNDAQUIL", level = 20, hp = 20 } }
+local scaledParty = run.loader.hooks:call("trainer.party",
+  function(_, _, party) return party end, "YOUNGSTER", 1,
+  { { species = "HOOTHOOT", level = 3, moves = {},
+      dvs = { attack = 8, defense = 8, speed = 8, special = 8 } } })
+assert(scaledParty[1].level == 9,
+  "production trainer hook must scale to the highest-party floor and cap")
+assert(scaledParty[1].moves[1].id == "MOVE_B"
+    and scaledParty[1].moves[4].id == "MOVE_E",
+  "production trainer scaling must regenerate the latest four natural moves")
+local Battle = require("src.battle.gen2.Battle")
+local scaledWild = Battle.new({ data = game.data, party = game.save.party,
+  wild = { species = "HOOTHOOT", level = 3, moves = {},
+    dvs = { attack = 8, defense = 8, speed = 8, special = 8 } } })
+assert(scaledWild.enemy.level == 9,
+  "production Gold wild battle path must apply party-based scaling")
+assert(scaledWild.enemy.moves[1].id == "MOVE_B"
+    and scaledWild.enemy.moves[4].id == "MOVE_E",
+  "production wild scaling must regenerate the latest four natural moves")
+
+game.save.party = {
+  { species = "CYNDAQUIL", level = 8, hp = 8 },
+  { species = "SENTRET", level = 20, hp = 20 },
+}
+game.save.repelSteps = 5
+local World = require("src.world.gen2.World")
+assert(World.repelSuppresses({ game = game }, 3) == false,
+  "production Repel path must use the scaled encounter level")
+local repelWild = Battle.new({ data = game.data, party = game.save.party,
+  wild = { species = "HOOTHOOT", level = 3, moves = {},
+    dvs = { attack = 8, defense = 8, speed = 8, special = 8 } } })
+assert(repelWild.enemy.level == 9,
+  "the wild battle must reuse the exact level accepted by Repel")
+game.save.repelSteps = nil
+game.save.party = { { species = "CYNDAQUIL", level = 20, hp = 20 } }
 
 local menu = run.loader.hooks:call("ui.start_menu.items",
   function(_, items) return items end, game,

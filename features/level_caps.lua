@@ -17,6 +17,7 @@ local KANTO = {
 }
 
 local RED_EVENT = 1890
+local KANTO_SCALING_CAPS = { 52, 55, 58, 61, 64, 67, 70 }
 local Mon = require("src.battle.gen2.Mon")
 
 local function saveOf(gameOrSave)
@@ -46,7 +47,7 @@ local function eventSet(gameOrSave, save, id)
   return math.floor(value / (2 ^ (id % 8))) % 2 == 1
 end
 
-function LevelCaps.current(gameOrSave)
+function LevelCaps.current(gameOrSave, opts)
   local save = saveOf(gameOrSave)
   local badges = save.player and save.player.badges
   for _, milestone in ipairs(JOHTO) do
@@ -65,12 +66,22 @@ function LevelCaps.current(gameOrSave)
   for index, badge in ipairs(KANTO) do
     if owns(kanto, badge, index) then count = count + 1 end
   end
-  if count >= 7 then return 58, "BLUE" end
+  if count >= 7 then
+    return opts and opts.scaling and 75 or 58, "BLUE"
+  end
+  if opts and opts.scaling then
+    return KANTO_SCALING_CAPS[count + 1], "KANTO"
+  end
   return 50, "KANTO"
 end
 
 function LevelCaps.install(mod)
-  mod.exports.levelCaps = { current = LevelCaps.current }
+  local function current(gameOrSave)
+    return LevelCaps.current(gameOrSave, {
+      scaling = mod.save:get("level_scaling", true) == true,
+    })
+  end
+  mod.exports.levelCaps = { current = current }
 
   local function enabled()
     return mod.save:get("level_caps", true) == true
@@ -81,7 +92,7 @@ function LevelCaps.install(mod)
     if not enabled() then return amount end
     local mon = ctx and ctx.mon
     local game = mod.game
-    local cap = LevelCaps.current(game)
+    local cap = current(game)
     if not (mon and cap) then return amount end
     if (mon.level or 1) >= cap then return 0 end
     local data = game and game.data
@@ -99,7 +110,7 @@ function LevelCaps.install(mod)
     "Gold Rare Candy level-cap enforcement is unavailable; update this mod")
   ItemEffects.useOnMon = function(itemId, mon, data, ...)
     if enabled() and itemId == "RARE_CANDY" then
-      local cap = LevelCaps.current(mod.game)
+      local cap = current(mod.game)
       if cap and mon and (mon.level or 1) >= cap then
         return { used = false,
           text = ("The level cap is\nlevel %d!"):format(cap) }
@@ -126,7 +137,7 @@ function LevelCaps.install(mod)
   Breeding.dayCareStep = function(data, save, ...)
     local results = { dayCareStep(data, save, ...) }
     if enabled() then
-      local cap = LevelCaps.current({ save = save })
+      local cap = current({ save = save })
       local dayCare = Breeding.dayCare(save)
       clampExperience(dayCare and dayCare.man and dayCare.man.mon, data, cap)
       clampExperience(dayCare and dayCare.lady and dayCare.lady.mon, data, cap)
@@ -139,7 +150,7 @@ function LevelCaps.install(mod)
       local dayCare = Breeding.dayCare(save)
       local side = dayCare and dayCare[which]
       clampExperience(side and side.mon, data,
-        LevelCaps.current({ save = save }))
+        current({ save = save }))
     end
     return withdraw(data, save, which, ...)
   end

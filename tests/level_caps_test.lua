@@ -9,7 +9,7 @@ local function eq(actual, expected, label)
 end
 
 local hooks = {}
-local saved = {}
+local saved = { level_scaling = false }
 local mod = {
   exports = {},
   save = { get = function(_, key, default)
@@ -127,18 +127,39 @@ local sevenKanto = {
   BOULDER = true, CASCADE = true, THUNDER = true, RAINBOW = true,
   SOUL = true, MARSH = true, VOLCANO = true,
 }
-cap, target = current(postJohto(sevenKanto, 1))
+cap, target = current(postJohto({
+  BOULDER = true, CASCADE = true, THUNDER = true, RAINBOW = true,
+  SOUL = true, MARSH = true, VOLCANO = true,
+}, 1))
 eq(cap, 58, "seven Kanto badges unlock Blue's cap")
 eq(target, "BLUE", "seven Kanto badges target Blue")
 
-sevenKanto.EARTH = true
-cap, target = current(postJohto(sevenKanto, 1))
+local allKanto = {
+  BOULDER = true, CASCADE = true, THUNDER = true, RAINBOW = true,
+  SOUL = true, MARSH = true, VOLCANO = true, EARTH = true,
+}
+cap, target = current(postJohto(allKanto, 1))
 eq(cap, 81, "Blue unlocks Red's cap")
 eq(target, "RED", "Blue's badge targets Red")
 
-cap, target = current(postJohto(sevenKanto, 1, true))
+cap, target = current(postJohto(allKanto, 1, true))
 eq(cap, nil, "beating Red removes the level cap")
 eq(target, "COMPLETE", "beating Red completes the cap schedule")
+
+saved.level_scaling = true
+cap, target = current(postJohto({}, 1))
+eq(cap, 52, "scaling raises the first Kanto challenge cap to 52")
+cap = current(postJohto({ BOULDER = true }, 1))
+eq(cap, 55, "one Kanto badge raises the next scaling cap to 55")
+cap = current(postJohto({
+  BOULDER = true, CASCADE = true, THUNDER = true,
+  RAINBOW = true, SOUL = true, MARSH = true,
+}, 1))
+eq(cap, 70, "six Kanto badges raise the final open-order leader cap to 70")
+cap, target = current(postJohto(sevenKanto, 1))
+eq(cap, 75, "seven Kanto badges raise Blue's scaling cap to 75")
+eq(target, "BLUE", "the level 75 scaling tier targets Blue")
+saved.level_scaling = false
 
 mod.game = { save = { player = { badges = {} } }, data = { pokemon = {
   CYNDAQUIL = { growthRate = "MEDIUM" },

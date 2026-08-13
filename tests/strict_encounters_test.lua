@@ -27,6 +27,7 @@ package.loaded[worldModule] = {
   load = function() end,
   poisonFaintScript = function() end,
   askYesNo = function() end,
+  repelSuppresses = function() return false end,
 }
 
 local function newMod(savedValues)
@@ -132,6 +133,8 @@ eq(intro[6].saveKey, "mandatory_nicknames",
   "Oak asks whether nicknames are mandatory")
 eq(intro[7].saveKey, "level_caps",
   "Oak asks whether level caps are enabled")
+eq(intro[8].saveKey, "level_scaling",
+  "Oak asks whether level scaling is enabled")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -150,6 +153,9 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "level_caps", value = true,
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "level_scaling", value = true,
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -157,6 +163,7 @@ eq(h.save.permadeath, true, "new-run permadeath setting is persisted")
 eq(h.save.mandatory_nicknames, true,
   "new-run mandatory nickname setting is persisted")
 eq(h.save.level_caps, true, "new-run level cap setting is persisted")
+eq(h.save.level_scaling, true, "new-run level scaling setting is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -202,6 +209,14 @@ eq(h.save.level_caps, false, "active save can disable level caps in-game")
 eq(settings.items[6].right, "OFF", "disabled level caps show as off")
 settings.opts.onChoose(settings.items[6], settings)
 eq(h.save.level_caps, true, "active save can re-enable level caps in-game")
+eq(settings.items[7].right, "ON", "level scaling defaults to enabled")
+settings.opts.onChoose(settings.items[7], settings)
+eq(h.save.level_scaling, false,
+  "active save can disable level scaling in-game")
+eq(settings.items[7].right, "OFF", "disabled level scaling shows as off")
+settings.opts.onChoose(settings.items[7], settings)
+eq(h.save.level_scaling, true,
+  "active save can re-enable level scaling in-game")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.

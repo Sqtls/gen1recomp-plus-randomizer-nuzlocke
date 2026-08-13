@@ -13,6 +13,7 @@ package.loaded[worldModule] = {
   load = function() end,
   poisonFaintScript = function() end,
   askYesNo = function() end,
+  repelSuppresses = function() return false end,
 }
 
 local function read(relative)
@@ -43,7 +44,7 @@ install(mod)
 assert(mod.exports.project.generation == 2, "project must target Gen 2")
 assert(mod.exports.project.game == "gold", "project must target Gold")
 assert(mod.exports.project.status
-    == "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-and-level-caps",
+    == "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-level-caps-and-level-scaling",
   "project must report its active feature set")
 
 print("project smoke test: 3 checks passed")

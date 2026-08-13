@@ -27,6 +27,7 @@ package.loaded[battleStateModule] = BattleState
 
 local World = {
   load = function() end,
+  repelSuppresses = function() return false end,
   poisonFaintScript = function(world)
     world.poisonPartyCount = #(world.game.save.party or {})
   end,

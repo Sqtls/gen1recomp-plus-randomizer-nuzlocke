@@ -6,7 +6,8 @@ in gen1recomp++, built one independently validated feature at a time.
 ## Status
 
 Strict first encounters, the dupes and shiny clauses, party permadeath,
-failed-run reports, mandatory nicknames, and level caps are implemented.
+failed-run reports, mandatory nicknames, level caps, and level scaling are
+implemented.
 
 - Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE` duplicate-family rule, and
   the shiny clause for each new run.
@@ -39,8 +40,19 @@ failed-run reports, mandatory nicknames, and level caps are implemented.
   31, Jasmine 35, and Clair 40. Pryce is deliberately checked before Jasmine
   so the cap never falls from 35 back to 31 when those gyms are done out of
   order.
-- The Elite Four and Champion cap is 50. Kanto remains at 50 until seven Kanto
-  badges, rises to 58 for Blue, then 81 for Red. Defeating Red removes the cap.
+- The Elite Four and Champion cap is 50. With `LEVEL SCALING` off, Kanto stays
+  at 50 until seven Kanto badges, rises to 58 for Blue, then 81 for Red.
+- With `LEVEL SCALING` enabled, wild Pokémon and ordinary trainer roster
+  members scale around 80% of the highest-level non-Egg Pokémon currently in
+  the party, with a random variance of two levels in either direction. Vanilla
+  levels are never reduced and scaling never raises an addition past the active
+  cap. Scaled Pokémon regenerate the latest four natural moves available at
+  their new level; explicitly authored trainer movesets remain unchanged.
+  Boxed Pokémon are ignored, and Repels evaluate the final scaled wild level.
+- Kanto leaders use ace targets of 52, 55, 58, 61, 64, 67, and 70 based on the
+  number of Kanto badges already owned, so they remain open-order. Each roster
+  keeps its original level spread. Blue's target is 75 and Red's is 81; player
+  caps advance to the same targets. Defeating Red removes the cap.
 
 Gold v0.1.80 is handled directly for starter/scripted-gift and wild-catch
 nickname flows because that build predates the public nickname hook call sites.
@@ -89,6 +101,7 @@ luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/permadeath_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/run_report_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/mandatory_nicknames_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_caps_test.lua
+luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/level_scaling_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/smoke_test.lua
 luajit ../gen1recomp-plus-randomizer-nuzlocke/tests/loader_integration_test.lua
 python3 tools/modkit.py validate ../gen1recomp-plus-randomizer-nuzlocke --base fixture
