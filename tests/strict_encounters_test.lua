@@ -29,6 +29,7 @@ package.loaded[worldModule] = {
   poisonFaintScript = function() end,
   askYesNo = function() end,
   repelSuppresses = function() return false end,
+  rockMonEncounter = function() return 0 end,
 }
 
 local function newMod(savedValues)
@@ -155,6 +156,17 @@ eq(intro[13].saveKey, "breeding_eggs",
 eq(intro[13].choices[1], "FORBID", "bred Eggs default to forbidden")
 eq(intro[13].choices[2], "AREA", "Oak offers one Day-Care area Egg")
 eq(intro[13].choices[3], "BONUS", "Oak offers unrestricted breeding")
+eq(intro[14].saveKey, "wild_randomizer",
+  "Oak asks how ordinary wild Pokemon are randomized")
+eq(intro[14].choices[1], "OFF", "wild randomization defaults to off")
+eq(intro[14].choices[2], "BALANCED", "Oak offers balanced wilds")
+eq(intro[14].choices[3], "CHAOS", "Oak offers chaotic wilds")
+eq(intro[15].saveKey, "wild_legendaries",
+  "Oak asks whether ordinary wilds may become legendary")
+eq(intro[15].choices[1], "EXCLUDE",
+  "ordinary wild legendaries default to excluded")
+eq(intro[15].choices[2], "ALLOW",
+  "Oak can allow legendary ordinary wilds")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -191,6 +203,12 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "breeding_eggs", value = "forbid",
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "wild_randomizer", value = "balanced",
+})
+h:emit("intro.oak_speech.answered", {
+  saveKey = "wild_legendaries", value = "exclude",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -208,6 +226,10 @@ eq(h.save.gift_encounters, "bonus",
   "new-run gift encounter policy is persisted")
 eq(h.save.breeding_eggs, "forbid",
   "new-run breeding Egg policy is persisted")
+eq(h.save.wild_randomizer, "balanced",
+  "new-run wild randomizer mode is persisted")
+eq(h.save.wild_legendaries, "exclude",
+  "new-run ordinary-wild legendary policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -299,6 +321,31 @@ settings.opts.onChoose(settings.items[12], settings)
 eq(h.save.breeding_eggs, "bonus", "breeding policy can change to BONUS")
 settings.opts.onChoose(settings.items[12], settings)
 eq(h.save.breeding_eggs, "forbid", "breeding policy cycles to FORBID")
+eq(settings.items[13].right, "BALANCED",
+  "active settings show balanced wild randomization")
+settings.opts.onChoose(settings.items[13], settings)
+eq(h.save.wild_randomizer, "chaos", "wild randomizer can change to CHAOS")
+eq(settings.items[13].right, "CHAOS", "chaos randomizer mode is displayed")
+settings.opts.onChoose(settings.items[13], settings)
+eq(h.save.wild_randomizer, "off", "wild randomizer can change to OFF")
+settings.opts.onChoose(settings.items[13], settings)
+eq(h.save.wild_randomizer, "balanced",
+  "wild randomizer cycles back to BALANCED")
+eq(settings.items[14].right, "EXCLUDE",
+  "ordinary wild legendaries default to excluded")
+settings.opts.onChoose(settings.items[14], settings)
+eq(h.save.wild_legendaries, "allow",
+  "ordinary wild legendaries can be allowed")
+eq(settings.items[14].right, "ALLOW",
+  "allowed ordinary wild legendaries are displayed")
+settings.opts.onChoose(settings.items[14], settings)
+eq(h.save.wild_legendaries, "exclude",
+  "ordinary wild legendary policy cycles to EXCLUDE")
+local visibleSeed = tonumber(settings.items[15].right)
+eq(type(visibleSeed), "number", "active settings show the randomizer seed")
+settings.opts.onChoose(settings.items[15], settings)
+eq(tonumber(settings.items[15].right), visibleSeed,
+  "the displayed seed is read-only")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.

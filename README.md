@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.18.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.19.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -22,15 +22,16 @@ scaled, and a failed run ends with a complete run report.
 > Pokémon Red, Blue, or Yellow.
 
 > [!NOTE]
-> The Nuzlocke and level-scaling foundation is implemented now. Pokémon, item,
-> trainer, and encounter randomization are planned features and are **not yet
-> included** in the current release.
+> Wild Pokémon randomization is implemented now. Static, roaming, trainer,
+> gift, item, move, ability, and evolution randomizers are planned as focused
+> follow-up features and are **not yet included** in the current release.
 
 ## Contents
 
 - [Highlights](#highlights)
 - [Installation](#installation)
 - [Configuring a run](#configuring-a-run)
+- [Wild randomization](#wild-randomization)
 - [Encounter rules](#encounter-rules)
 - [Permadeath and run endings](#permadeath-and-run-endings)
 - [Level caps](#level-caps)
@@ -44,6 +45,7 @@ scaled, and a failed run ends with a complete run report.
 | Feature | What it does |
 | --- | --- |
 | Locked ruleset | Permanently locks every configured rule when the player first obtains a Ball. |
+| Seeded wild randomizer | Replaces ordinary wild species using balanced or unrestricted slot mappings that remain stable for the full run. |
 | Strict encounters | Enforces one eligible encounter per named area and permanently records catches and failures. |
 | Evolution-family dupes | Skips, loses, or allows duplicate evolutionary lines according to your chosen policy, using every species ever owned during the run. |
 | Shiny clause | Lets shinies bypass route and duplicate restrictions without changing the area's normal encounter. |
@@ -106,6 +108,42 @@ read-only summary of the active rules and current level cap.
 | `STATIC` | `AREA` | `AREA` / `BONUS` / `FORBID` | Controls scripted static encounters. |
 | `GIFTS` | `BONUS` | `BONUS` / `AREA` | Controls gifted Pokémon and Eggs. |
 | `BREEDING` | `FORBID` | `FORBID` / `AREA` / `BONUS` | Controls Eggs produced by the Day Care. |
+| `WILD MODE` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls ordinary wild species randomization. |
+| `LEGENDS` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether ordinary wild slots may become legendary Pokémon. |
+| `SEED` | Generated | Read-only | Shows the stable seed used for this run's randomization. |
+
+## Wild randomization
+
+`WILD MODE` changes species while preserving the encounter's original
+level. The existing level-scaling rule then evaluates and scales that final
+Pokémon normally.
+
+| Mode | Behaviour |
+| --- | --- |
+| `OFF` | Preserves Gold's original wild species. |
+| `BALANCED` | Replaces each species with one at the same evolution stage and within 10 percent BST, with a minimum 25-point window. If no exact window match exists, it chooses from the closest same-stage species. |
+| `CHAOS` | Replaces slots from the complete allowed Gen 1 and Gen 2 species pool without BST or evolution-stage limits. |
+
+The mapping is deterministic for the run. The seed, map, encounter method,
+time of day, and table slot ensure that revisiting the same encounter table
+does not reroll it. The seed is generated when the save is created and remains
+visible from `START → NUZLOCKE`.
+
+The randomizer covers grass, caves, Surf, Sweet Scent, fishing, Headbutt trees,
+Rock Smash, and ordinary swarm tables. All Headbutt trees that use the same
+Gold encounter table share its randomized slots rather than becoming separate
+locations.
+
+`LEGENDS` is limited to ordinary wild tables:
+
+- `EXCLUDE` prevents those slots from becoming legendary or mythical Pokémon.
+- `ALLOW` includes legendary and mythical Pokémon in the available pool.
+
+Bug-Catching Contest encounters, the catching tutorial, scripted static
+encounters, roaming Pokémon, gifts, and trainer parties are deliberately
+excluded. They will receive dedicated policies in their own randomizer
+features. Native Unown slots stay as Unown so Gold's puzzle and form-unlock
+logic cannot silently remove encounters.
 
 ## Encounter rules
 
@@ -360,7 +398,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.18.0 |
+| Current mod version | 0.19.0 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly
