@@ -24,6 +24,6 @@ return function(mod)
   mod.exports.project = {
     generation = 2,
     game = "gold",
-    status = "strict-encounters-shiny-clause-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
+    status = "strict-encounters-dupes-shiny-static-policy-permadeath-run-reports-mandatory-nicknames-level-caps-level-scaling-forced-set-mode-and-no-battle-items",
   }
 end

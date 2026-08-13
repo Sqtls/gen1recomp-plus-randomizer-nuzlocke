@@ -20,6 +20,7 @@ function StrictEncounters.install(mod)
         { label = "LEVEL SCALING", value = "level_scaling" },
         { label = "SET MODE", value = "forced_set_mode" },
         { label = "NO BATTLE ITEMS", value = "no_battle_items" },
+        { label = "STATIC", value = "static_encounters" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -43,6 +44,7 @@ function StrictEncounters.install(mod)
           and "ON" or "OFF"
         items[9].right = setting(mod, "no_battle_items", false)
           and "ON" or "OFF"
+        items[10].right = setting(mod, "static_encounters", "area"):upper()
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -78,6 +80,11 @@ function StrictEncounters.install(mod)
           elseif item.value == "no_battle_items" then
             mod.save:set("no_battle_items",
               not setting(mod, "no_battle_items", false))
+          elseif item.value == "static_encounters" then
+            local current = setting(mod, "static_encounters", "area")
+            mod.save:set("static_encounters",
+              ({ area = "bonus", bonus = "forbid", forbid = "area" })[current]
+                or "area")
           elseif item.value == "done" then
             menu:close()
             return
@@ -143,6 +150,13 @@ function StrictEncounters.install(mod)
       text = "Forbid non-BALL\nitems in battle?",
       choices = { "OFF", "ON" }, values = { false, true },
     })
+    mod.ui.insertStepAfter(result, "plus_no_battle_items", {
+      id = "plus_static_encounters", kind = "choice", pic = "oak",
+      saveKey = "static_encounters",
+      text = "How should static\nencounters work?",
+      choices = { "AREA", "BONUS", "FORBID" },
+      values = { "area", "bonus", "forbid" },
+    })
     return result
   end)
 
@@ -154,7 +168,8 @@ function StrictEncounters.install(mod)
         or ev.saveKey == "level_caps"
         or ev.saveKey == "level_scaling"
         or ev.saveKey == "forced_set_mode"
-        or ev.saveKey == "no_battle_items") then
+        or ev.saveKey == "no_battle_items"
+        or ev.saveKey == "static_encounters") then
       mod.save:set(ev.saveKey, ev.value)
       if ev.saveKey == "forced_set_mode" and ev.value == true then
         local rule = mod.exports.forcedSetMode
@@ -178,6 +193,20 @@ function StrictEncounters.install(mod)
   local battles = setmetatable({}, { __mode = "k" })
   local originalShinies = setmetatable({}, { __mode = "k" })
   local activeBattle
+  local pendingStatic = false
+
+  mod.hooks:wrap("script.command", function(next, ctx, name, args, cmd)
+    if name == "loadwildmon" then
+      pendingStatic = true
+    elseif name == "randomwildmon" or name == "loadtrainer" then
+      pendingStatic = false
+    end
+    return next(ctx, name, args, cmd)
+  end)
+
+  mod.events:on("script.ended", function()
+    pendingStatic = false
+  end)
 
   local function enabled(game)
     return setting(mod, "strict_encounters", true) == true
@@ -304,16 +333,29 @@ function StrictEncounters.install(mod)
   mod.events:on("battle.started", function(ev)
     local battle = ev and ev.battle
     local game = mod.game
+    local static = pendingStatic and ev and ev.kind == "wild"
+    pendingStatic = false
     if not enabled(game) or not started(game)
         or not eligibleBattle(battle, game, ev) then return end
 
     activeBattle = battle
     originalShinies[battle] = isShiny(battle.enemy)
-    if shinyClauseExempts(battle) then return end
     local key, mapId = canonicalArea(game)
     local existing = ledger()[key]
     local species = ev.species or battle.enemy and battle.enemy.species
-    battles[battle] = { key = key, species = species }
+    local staticPolicy = static
+      and setting(mod, "static_encounters", "area") or nil
+    battles[battle] = {
+      key = key, species = species,
+      staticArea = staticPolicy == "area",
+      staticBonus = staticPolicy == "bonus",
+      staticForbid = staticPolicy == "forbid",
+    }
+    if staticPolicy == "bonus" or staticPolicy == "forbid" then return end
+    if not static and shinyClauseExempts(battle) then
+      battles[battle] = nil
+      return
+    end
     if existing then return end
 
     local mode = setting(mod, "dupes_mode", "skip")
@@ -365,10 +407,16 @@ function StrictEncounters.install(mod)
 
   local function captureDenial(game, battle)
     if not enabled(game) or not eligibleBattle(battle, game) then return nil end
-    if shinyClauseExempts(battle) then return nil end
+    local current = battles[battle]
+    if current and current.staticForbid then
+      return "Static encounters\ncannot be caught!"
+    end
+    if current and current.staticBonus then return nil end
+    if not (current and current.staticArea) and shinyClauseExempts(battle) then
+      return nil
+    end
     local key = canonicalArea(game)
     local state = ledger()[key]
-    local current = battles[battle]
     local species = state and state.species or current and current.species
       or battle and battle.enemy and battle.enemy.species
     local name = pokemonName(game, species)

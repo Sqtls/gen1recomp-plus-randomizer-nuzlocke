@@ -141,6 +141,11 @@ eq(intro[9].saveKey, "forced_set_mode",
   "Oak asks whether Set mode is enforced")
 eq(intro[10].saveKey, "no_battle_items",
   "Oak asks whether non-ball battle items are forbidden")
+eq(intro[11].saveKey, "static_encounters",
+  "Oak asks how static encounters are handled")
+eq(intro[11].choices[1], "AREA", "static encounters default to area policy")
+eq(intro[11].choices[2], "BONUS", "Oak offers bonus static encounters")
+eq(intro[11].choices[3], "FORBID", "Oak can forbid static captures")
 h:emit("intro.oak_speech.answered", {
   saveKey = "strict_encounters", value = true,
 })
@@ -168,6 +173,9 @@ h:emit("intro.oak_speech.answered", {
 h:emit("intro.oak_speech.answered", {
   saveKey = "no_battle_items", value = false,
 })
+h:emit("intro.oak_speech.answered", {
+  saveKey = "static_encounters", value = "area",
+})
 eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
 eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
 eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
@@ -179,6 +187,8 @@ eq(h.save.level_scaling, true, "new-run level scaling setting is persisted")
 eq(h.save.forced_set_mode, true, "new-run Set-mode setting is persisted")
 eq(h.save.no_battle_items, false,
   "new-run battle-item setting is persisted")
+eq(h.save.static_encounters, "area",
+  "new-run static encounter policy is persisted")
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]
@@ -248,6 +258,14 @@ eq(settings.items[9].right, "ON", "enabled battle-item rule shows as on")
 settings.opts.onChoose(settings.items[9], settings)
 eq(h.save.no_battle_items, false,
   "active save can restore non-ball battle items in-game")
+eq(settings.items[10].right, "AREA", "static encounters default to area policy")
+settings.opts.onChoose(settings.items[10], settings)
+eq(h.save.static_encounters, "bonus", "static policy can change to BONUS")
+eq(settings.items[10].right, "BONUS", "bonus static policy is displayed")
+settings.opts.onChoose(settings.items[10], settings)
+eq(h.save.static_encounters, "forbid", "static policy can change to FORBID")
+settings.opts.onChoose(settings.items[10], settings)
+eq(h.save.static_encounters, "area", "static policy cycles back to AREA")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
 -- which share Gold's native landmark are one area even when their map ids differ.
@@ -466,6 +484,103 @@ allowed = catchHook(function() return true end, {
 eq(allowed, false,
   "normal encounter cannot gain shiny exemption by Transforming")
 h:emit("battle.ended", { battle = transformedNormal, result = "run" })
+
+-- Scripted loadwildmon battles are static regardless of species. Their policy
+-- takes precedence over the shiny clause so Red Gyarados does not silently
+-- become a bonus encounter when AREA or FORBID is selected.
+local scriptCommand = h.hooks["script.command"]
+eq(type(scriptCommand), "function", "static origin detection is registered")
+local function armStatic()
+  scriptCommand(function() end, { generation = 2 }, "loadwildmon", {}, {
+    op = "loadwildmon", species = "GYARADOS", level = 30,
+  })
+end
+
+h:setMap("ROUTE_39")
+h.save.static_encounters = "area"
+armStatic()
+local areaStatic = {
+  wild = true, enemy = { species = "GYARADOS", shiny = true },
+}
+h:emit("battle.started", {
+  battle = areaStatic, kind = "wild", species = "GYARADOS",
+})
+eq(h.save.encounter_areas["LANDMARK:26"].status, "active",
+  "AREA makes even a shiny static the area's encounter")
+h:emit("pokemon.caught", {
+  game = game, battle = areaStatic, species = "GYARADOS",
+})
+eq(h.save.encounter_areas["LANDMARK:26"].status, "caught",
+  "AREA static catch consumes its area")
+h:emit("battle.ended", { battle = areaStatic, result = "caught" })
+armStatic()
+local blockedAreaStatic = {
+  wild = true, enemy = { species = "GYARADOS", shiny = true },
+}
+h:emit("battle.started", {
+  battle = blockedAreaStatic, kind = "wild", species = "GYARADOS",
+})
+allowed = catchHook(function() return true end, {
+  game = game, battle = blockedAreaStatic, species = "GYARADOS",
+})
+eq(allowed, false, "AREA blocks a static when its area is already consumed")
+h:emit("battle.ended", { battle = blockedAreaStatic, result = "run" })
+h.save.encounter_areas["LANDMARK:26"] = nil
+
+h:setMap("ROUTE_38")
+h.save.static_encounters = "bonus"
+h.save.encounter_areas["LANDMARK:25"] = {
+  status = "caught", species = "SENTRET", mapId = "ROUTE_38",
+}
+armStatic()
+local bonusStatic = { wild = true, enemy = { species = "SNORLAX" } }
+h:emit("battle.started", {
+  battle = bonusStatic, kind = "wild", species = "SNORLAX",
+})
+allowed = catchHook(function() return true end, {
+  game = game, battle = bonusStatic, species = "SNORLAX",
+})
+eq(allowed, true, "BONUS static can be caught")
+h:emit("pokemon.caught", {
+  game = game, battle = bonusStatic, species = "SNORLAX",
+})
+eq(h.save.encounter_areas["LANDMARK:25"].species, "SENTRET",
+  "BONUS static bypasses and preserves an already-consumed area")
+h.save.encounter_areas["LANDMARK:25"] = nil
+
+h:setMap("ROUTE_37")
+h.save.static_encounters = "forbid"
+armStatic()
+local forbiddenStatic = {
+  wild = true, enemy = { species = "GYARADOS", shiny = true },
+}
+h:emit("battle.started", {
+  battle = forbiddenStatic, kind = "wild", species = "GYARADOS",
+})
+allowed, denial = catchHook(function() return true end, {
+  game = game, battle = forbiddenStatic, species = "GYARADOS",
+})
+eq(allowed, false, "FORBID blocks even a shiny static encounter")
+eq(denial, "Static encounters\ncannot be caught!",
+  "FORBID explains the static encounter policy")
+h:emit("battle.ended", { battle = forbiddenStatic, result = "run" })
+eq(h.save.encounter_areas["LANDMARK:24"], nil,
+  "FORBID does not consume the surrounding area")
+
+h:setMap("ROUTE_36")
+armStatic()
+scriptCommand(function() end, { generation = 2 }, "randomwildmon", {}, {
+  op = "randomwildmon",
+})
+local scriptedWild = { wild = true, enemy = { species = "HOOTHOOT" } }
+h:emit("battle.started", {
+  battle = scriptedWild, kind = "wild", species = "HOOTHOOT",
+})
+eq(h.save.encounter_areas["LANDMARK:23"].status, "active",
+  "randomwildmon scripts remain ordinary area encounters")
+h:emit("battle.ended", { battle = scriptedWild, result = "run" })
+h.save.encounter_areas["LANDMARK:23"] = nil
+h.save.static_encounters = "area"
 
 -- Dupes checks the complete evolution family and remembers catches even if
 -- that Pokemon later leaves the party. SKIP preserves the route but forbids

@@ -7,7 +7,8 @@ in gen1recomp++, built one independently validated feature at a time.
 
 Strict first encounters, the dupes and shiny clauses, party permadeath,
 failed-run reports, mandatory nicknames, level caps, level scaling, enforced
-Set battle mode, and the optional no-battle-items challenge are implemented.
+Set battle mode, static encounter policies, and the optional no-battle-items
+challenge are implemented.
 
 - Oak configures `1ST ENCOUNTER`, the `SKIP`/`LOSE`/`OFF` duplicate-family
   rule, and the shiny clause for each new run.
@@ -20,6 +21,12 @@ Set battle mode, and the optional no-battle-items challenge are implemented.
 - `DUPES: SKIP` refuses any previously caught evolution-family member without
   consuming the area, `LOSE` immediately fails the area, and `OFF` allows the
   duplicate to become the area's ordinary encounter.
+- Scripted static encounters are configurable as `AREA`, `BONUS`, or `FORBID`.
+  `AREA` uses the surrounding area's encounter, `BONUS` bypasses and preserves
+  that area, and `FORBID` refuses the catch entirely. This policy takes priority
+  over the shiny clause, including for the Red Gyarados. Detection follows
+  Gold's scripted encounter origin rather than a species list, so randomized
+  static species retain the selected policy.
 - Trainer battles, the catching tutorial, and the Bug-Catching Contest are
   exempt.
 - Gold maps sharing the same landmark share one encounter allocation.
