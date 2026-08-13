@@ -126,6 +126,12 @@ eq(pic.cmd.species, replacement, "starter preview shows the replacement")
 eq(pic.cmd.object, replacement, "starter preview metadata stays synchronized")
 eq(pic.args[1], replacement, "starter preview operands are rewritten")
 eq(picSource.species, 155, "starter preview does not mutate ROM data")
+local cartMapPic = command(picSource, {
+  mapId = "24:5", mapGroup = 24, mapNumber = 5,
+  scriptKey = "60:40c6", object = 3,
+})
+eq(cartMapPic.cmd.species, replacement,
+  "starter preview accepts the released engine's cart map id")
 local cry = command({ op = "cry", id = 155 })
 eq(cry.cmd.id, replacement, "starter preview plays the replacement cry")
 local name = command({ op = "getmonname", species = 155, args = { 155 } })

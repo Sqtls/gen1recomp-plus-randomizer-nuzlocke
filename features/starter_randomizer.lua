@@ -27,6 +27,12 @@ local function setting(mod, key, default)
   return value
 end
 
+local function isElmsLab(ctx)
+  return type(ctx) == "table" and (ctx.mapId == "ELMS_LAB"
+    or ctx.mapId == "24:5"
+    or (ctx.mapGroup == 24 and ctx.mapNumber == 5))
+end
+
 local function evolvedSpecies(data, species, stage)
   local result = species
   for _ = 2, stage do
@@ -87,7 +93,7 @@ function StarterRandomizer.install(mod)
     writetext = true,
   }
   mod.hooks:wrap("script.command", function(next, ctx, name, args, cmd)
-    if not starterOps[name] or not ctx or ctx.mapId ~= "ELMS_LAB"
+    if not starterOps[name] or not isElmsLab(ctx)
         or setting(mod, "starter_randomizer", "off") == "off" then
       return next(ctx, name, args, cmd)
     end

@@ -315,7 +315,7 @@ local starterVm = Vm.new({
     { op = "end" },
   },
 }, {}, Events.new(), {
-  mapId = function() return "ELMS_LAB" end,
+  mapId = function() return "24:5" end,
   showPic = function(index) starterSeen.pic = index end,
   cry = function(index) starterSeen.cry = index end,
   getMonName = function(index) starterSeen.name = index return "TEST" end,
