@@ -14,6 +14,95 @@ local function percent(mod, key)
   return math.min(math.max(value, 0), 50)
 end
 
+-- SELECT on a settings row explains the rule and every value it can take.
+-- Written for Gold's dialogue box: \n is the second visible line and \f is a
+-- page break, so each page is at most two lines of eighteen columns.
+local HELP = {
+  strict_encounters = "Only the first\nPOKEMON met in\fan area may be\n"
+    .. "caught.\fOFF lifts the\nlimit entirely.",
+  dupes_mode = "When the first\nmeeting is a\fspecies you have\nowned:\f"
+    .. "SKIP: meet again.\nLOSE: no catch.\fOFF: allow the\nduplicate.",
+  shiny_clause = "Any shiny may be\ncaught, even in\fa used or\n"
+    .. "duplicate area.",
+  permadeath = "Fainted POKEMON\nare released for\fgood, and\n"
+    .. "REVIVES refused.",
+  mandatory_nicknames = "Every POKEMON you\nobtain must be\fgiven a custom\n"
+    .. "nickname.",
+  level_caps = "EXP, CANDY and\nDAY-CARE growth\fstop at the next\n"
+    .. "major battle's\flevel.",
+  level_scaling = "Weak wild and\ntrainer POKEMON\fare raised toward\n"
+    .. "your own level.",
+  wild_scaling_percent = "How far below\nyour best level\fwild POKEMON\n"
+    .. "aim.\f-0% is hardest,\n-50% is easiest.",
+  trainer_scaling_percent = "How far below\nyour best level\ftrainers aim.\f"
+    .. "-0% is hardest,\n-50% is easiest.\fGYM LEADERS are\nnot affected.",
+  forced_set_mode = "Battle style is\nlocked to SET:\fno free switch\n"
+    .. "after a faint.",
+  no_battle_items = "No POTIONS or\nother items may\fbe used in\n"
+    .. "battle.\fBALLS are still\nallowed.",
+  static_encounters = "Scripted battles\nlike the RED\fGYARADOS.\f"
+    .. "AREA: uses that\narea's catch.\fBONUS: free.\nFORBID: no catch.",
+  gift_encounters = "Gift POKEMON and\nscripted EGGS.\fBONUS: free.\n"
+    .. "AREA: uses that\farea's catch.",
+  breeding_eggs = "EGGS from the\nDAY-CARE.\fFORBID: none.\nAREA: one only.\f"
+    .. "BONUS: no limit.",
+  wild_randomizer = "Wild species are\nreplaced.\fBALANCED: similar\n"
+    .. "strength.\fCHAOS: anything.\nOFF: vanilla.",
+  wild_legendaries = "EXCLUDE keeps\nlegendaries out\fof ordinary\n"
+    .. "grass and water.",
+  static_randomizer = "Scripted static\nbattles are\freplaced.\f"
+    .. "BALANCED: similar\nstrength.\fCHAOS: anything.\nOFF: vanilla.",
+  static_legendaries = "MATCH keeps a\nlegendary static\fa legendary.\f"
+    .. "ANY allows any\nspecies.",
+  starter_randomizer = "ELM's three\nstarters are\freplaced.\f"
+    .. "BALANCED: similar\nstrength.\fCHAOS: anything.\nOFF: vanilla.",
+  starter_legendaries = "EXCLUDE keeps\nlegendaries out\fof the three\n"
+    .. "starter choices.",
+  gift_randomizer = "Gift POKEMON and\nscripted EGGS\fare replaced.\f"
+    .. "BALANCED: similar\nstrength.\fCHAOS: anything.\nOFF: vanilla.",
+  gift_legendaries = "EXCLUDE keeps\nlegendaries out\fof gifts and\nEGGS.",
+  trainer_randomizer = "Trainer parties\nare replaced.\f"
+    .. "Party size, final\nlevels and items\fare kept.",
+  trainer_legendaries = "EXCLUDE keeps\nlegendaries out\fof trainer\n"
+    .. "parties.",
+  trainer_bosses = "INCLUDE also\nrandomizes GYM\fLEADERS and your\nrival.\f"
+    .. "EXCLUDE leaves\nthem as they are.",
+  item_randomizer = "Found, hidden and\ngifted items,\fTM rewards and\n"
+    .. "berry trees.\fBALANCED: similar\nprice.\fCHAOS: anything.\f"
+    .. "KEY ITEMS, HMS\nand BALL gifts\fnever change.",
+  randomizer_seed = "The number every\nrandom choice is\fbuilt from.\f"
+    .. "The same seed\nalways gives the\fsame run.",
+  done = "Closes this\nscreen.\fThe rules lock\nwhen you get\fyour first BALL.",
+}
+
+-- The list is one menu but reads as two pages: the header switches the moment
+-- the cursor reaches the first randomizer row and switches back on the way up.
+local RANDOMIZER_ROWS = {
+  wild_randomizer = true, wild_legendaries = true,
+  static_randomizer = true, static_legendaries = true,
+  starter_randomizer = true, starter_legendaries = true,
+  gift_randomizer = true, gift_legendaries = true,
+  trainer_randomizer = true, trainer_legendaries = true,
+  trainer_bosses = true, item_randomizer = true, randomizer_seed = true,
+}
+
+local function titleFor(item)
+  if item and RANDOMIZER_ROWS[item.value] then return "RANDOMIZER SETTINGS" end
+  return "NUZLOCKE SETTINGS"
+end
+
+-- Crossing between the two pages scrolls like a page turn rather than one row:
+-- going down, the row entered sits at the top of the list; coming back up it
+-- sits at the bottom, so the page the cursor left is fully on screen.
+local function turnPage(menu, downward)
+  local rows = menu.rows or 7
+  if downward then
+    menu.scroll = menu.index - 1
+  else
+    menu.scroll = math.max(0, menu.index - rows)
+  end
+end
+
 function StrictEncounters.install(mod)
   local started
   mod.content.screens:register(SETTINGS_SCREEN, {
@@ -24,26 +113,26 @@ function StrictEncounters.install(mod)
         { label = "DUPES", value = "dupes_mode" },
         { label = "SHINY CLAUSE", value = "shiny_clause" },
         { label = "PERMADEATH", value = "permadeath" },
-        { label = "MANDATORY NAMES", value = "mandatory_nicknames" },
+        { label = "NICKNAMES", value = "mandatory_nicknames" },
         { label = "LEVEL CAPS", value = "level_caps" },
         { label = "LEVEL SCALING", value = "level_scaling" },
-        { label = "WILD SCALE", value = "wild_scaling_percent" },
-        { label = "TRAINER SCALE", value = "trainer_scaling_percent" },
+        { label = "WILD LVL", value = "wild_scaling_percent" },
+        { label = "TRAINER LVL", value = "trainer_scaling_percent" },
         { label = "SET MODE", value = "forced_set_mode" },
-        { label = "NO BATTLE ITEMS", value = "no_battle_items" },
+        { label = "NO ITEMS", value = "no_battle_items" },
         { label = "STATIC", value = "static_encounters" },
         { label = "GIFTS", value = "gift_encounters" },
         { label = "BREEDING", value = "breeding_eggs" },
-        { label = "WILD MODE", value = "wild_randomizer" },
+        { label = "WILDS", value = "wild_randomizer" },
         { label = "WILD LEG", value = "wild_legendaries" },
         { label = "STATICS", value = "static_randomizer" },
         { label = "STATIC LEG", value = "static_legendaries" },
         { label = "STARTERS", value = "starter_randomizer" },
-        { label = "STARTER LEG", value = "starter_legendaries" },
-        { label = "GIFT MONS", value = "gift_randomizer" },
+        { label = "START LEG", value = "starter_legendaries" },
+        { label = "GIFT MON", value = "gift_randomizer" },
         { label = "GIFT LEG", value = "gift_legendaries" },
         { label = "TRAINERS", value = "trainer_randomizer" },
-        { label = "TRAINER LEG", value = "trainer_legendaries" },
+        { label = "TRAIN LEG", value = "trainer_legendaries" },
         { label = "BOSSES", value = "trainer_bosses" },
         { label = "ITEMS", value = "item_randomizer" },
         { label = "SEED", value = "randomizer_seed" },
@@ -91,9 +180,15 @@ function StrictEncounters.install(mod)
         items[27].right = tostring(randomizer and randomizer.seed() or "-")
       end
       refresh()
-      return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
+      local screen = mod.ui.ListMenu.new(game, titleFor(items[1]), items, {
         wrap = true,
-        footer = locked and "LOCKED  B:BACK" or "A:CHANGE  B:BACK",
+        -- One line of eighteen columns: ListMenu wraps a longer footer onto a
+        -- second line that draws straight over the list rows.
+        footer = locked and "LOCKED SEL:INFO" or "A:SET SEL:INFO",
+        onSelectKey = function(item)
+          local help = item and HELP[item.value]
+          if help then game.stack:push(TextBox.new(game, help)) end
+        end,
         onChoose = function(item, menu)
           if item.value == "done" then
             menu:close()
@@ -207,201 +302,41 @@ function StrictEncounters.install(mod)
           refresh()
         end,
       })
+      -- ListMenu reads self.title every frame, so retitling as the cursor
+      -- moves turns the one list into two pages: the Nuzlocke rules, then the
+      -- randomizers.
+      local update = screen.update
+      screen.update = function(self, ...)
+        local result
+        if update then result = update(self, ...) end
+        local title = titleFor(self.items[self.index])
+        -- The randomizers are the lower page, so entering them is always the
+        -- downward turn and leaving them the upward one.
+        if title ~= self.title then
+          turnPage(self, RANDOMIZER_ROWS[self.items[self.index].value] ~= nil)
+        end
+        self.title = title
+        return result
+      end
+      return screen
     end,
   })
 
-  mod.hooks:wrap("intro.oak_speech.build", function(next, steps, speech)
-    local result = next(steps, speech)
-    if type(result) ~= "table" then return result end
-    mod.ui.insertStepAfter(result, "oak_welcome", {
-      id = "plus_strict_encounters", kind = "choice", pic = "oak",
-      saveKey = "strict_encounters", text = "Enforce the first\nencounter in each\narea?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_strict_encounters", {
-      id = "plus_dupes_mode", kind = "choice", pic = "oak",
-      saveKey = "dupes_mode", text = "When the first one\nis a duplicate?",
-      choices = { "SKIP", "LOSE", "OFF" },
-      values = { "skip", "lose", "off" },
-    })
-    mod.ui.insertStepAfter(result, "plus_dupes_mode", {
-      id = "plus_shiny_clause", kind = "choice", pic = "oak",
-      saveKey = "shiny_clause",
-      text = "Allow any shiny\nPOK\195\169MON to be\ncaught?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_shiny_clause", {
-      id = "plus_permadeath", kind = "choice", pic = "oak",
-      saveKey = "permadeath", text = "Permanently lose\nfainted POK\195\169MON?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_permadeath", {
-      id = "plus_mandatory_nicknames", kind = "choice", pic = "oak",
-      saveKey = "mandatory_nicknames",
-      text = "Require a nickname\nfor every POK\195\169MON?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_mandatory_nicknames", {
-      id = "plus_level_caps", kind = "choice", pic = "oak",
-      saveKey = "level_caps",
-      text = "Cap levels at each\nmajor challenge?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_level_caps", {
-      id = "plus_level_scaling", kind = "choice", pic = "oak",
-      saveKey = "level_scaling",
-      text = "Scale wild POK\195\169MON\nand trainer levels?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_level_scaling", {
-      id = "plus_forced_set_mode", kind = "choice", pic = "oak",
-      saveKey = "forced_set_mode",
-      text = "Always use SET\nbattle mode?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_forced_set_mode", {
-      id = "plus_no_battle_items", kind = "choice", pic = "oak",
-      saveKey = "no_battle_items",
-      text = "Forbid non-BALL\nitems in battle?",
-      choices = { "OFF", "ON" }, values = { false, true },
-    })
-    mod.ui.insertStepAfter(result, "plus_no_battle_items", {
-      id = "plus_static_encounters", kind = "choice", pic = "oak",
-      saveKey = "static_encounters",
-      text = "How should static\nencounters work?",
-      choices = { "AREA", "BONUS", "FORBID" },
-      values = { "area", "bonus", "forbid" },
-    })
-    mod.ui.insertStepAfter(result, "plus_static_encounters", {
-      id = "plus_gift_encounters", kind = "choice", pic = "oak",
-      saveKey = "gift_encounters",
-      text = "Should gifts use\ntheir area's catch?",
-      choices = { "BONUS", "AREA" }, values = { "bonus", "area" },
-    })
-    mod.ui.insertStepAfter(result, "plus_gift_encounters", {
-      id = "plus_breeding_eggs", kind = "choice", pic = "oak",
-      saveKey = "breeding_eggs",
-      text = "How should bred\nEGGS work?",
-      choices = { "FORBID", "AREA", "BONUS" },
-      values = { "forbid", "area", "bonus" },
-    })
-    mod.ui.insertStepAfter(result, "plus_breeding_eggs", {
-      id = "plus_wild_randomizer", kind = "choice", pic = "oak",
-      saveKey = "wild_randomizer",
-      text = "Randomize ordinary\nwild POK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_wild_randomizer", {
-      id = "plus_wild_legendaries", kind = "choice", pic = "oak",
-      saveKey = "wild_legendaries",
-      text = "Allow LEGENDARIES\nin ordinary wilds?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_wild_legendaries", {
-      id = "plus_static_randomizer", kind = "choice", pic = "oak",
-      saveKey = "static_randomizer",
-      text = "Randomize scripted\nstatic POK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_static_randomizer", {
-      id = "plus_static_legendaries", kind = "choice", pic = "oak",
-      saveKey = "static_legendaries",
-      text = "Map static LEGENDS\nto LEGENDS only?",
-      choices = { "MATCH", "ANY" },
-      values = { "match", "any" },
-    })
-    mod.ui.insertStepAfter(result, "plus_static_legendaries", {
-      id = "plus_starter_randomizer", kind = "choice", pic = "oak",
-      saveKey = "starter_randomizer",
-      text = "Randomize the three\nstarter POK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_starter_randomizer", {
-      id = "plus_starter_legendaries", kind = "choice", pic = "oak",
-      saveKey = "starter_legendaries",
-      text = "Allow a LEGENDARY\nas a starter?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_starter_legendaries", {
-      id = "plus_gift_randomizer", kind = "choice", pic = "oak",
-      saveKey = "gift_randomizer",
-      text = "Randomize gifted\nPOK\195\169MON and EGGS?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_gift_randomizer", {
-      id = "plus_gift_legendaries", kind = "choice", pic = "oak",
-      saveKey = "gift_legendaries",
-      text = "Allow LEGENDARIES\nas non-EGG gifts?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_gift_legendaries", {
-      id = "plus_trainer_randomizer", kind = "choice", pic = "oak",
-      saveKey = "trainer_randomizer",
-      text = "Randomize trainer\nPOK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_trainer_randomizer", {
-      id = "plus_trainer_legendaries", kind = "choice", pic = "oak",
-      saveKey = "trainer_legendaries",
-      text = "Allow LEGENDARIES\non trainer teams?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_trainer_legendaries", {
-      id = "plus_trainer_bosses", kind = "choice", pic = "oak",
-      saveKey = "trainer_bosses",
-      text = "Randomize major\nBOSS trainer teams?",
-      choices = { "INCLUDE", "EXCLUDE" },
-      values = { "include", "exclude" },
-    })
-    mod.ui.insertStepAfter(result, "plus_trainer_bosses", {
-      id = "plus_item_randomizer", kind = "choice", pic = "oak",
-      saveKey = "item_randomizer",
-      text = "Randomize found\nITEMS and TMs?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    return result
-  end)
-
-  mod.events:on("intro.oak_speech.answered", function(ev)
-    if ev and (ev.saveKey == "strict_encounters"
-        or ev.saveKey == "dupes_mode" or ev.saveKey == "shiny_clause"
-        or ev.saveKey == "permadeath"
-        or ev.saveKey == "mandatory_nicknames"
-        or ev.saveKey == "level_caps"
-        or ev.saveKey == "level_scaling"
-        or ev.saveKey == "forced_set_mode"
-        or ev.saveKey == "no_battle_items"
-        or ev.saveKey == "static_encounters"
-        or ev.saveKey == "gift_encounters"
-        or ev.saveKey == "breeding_eggs"
-        or ev.saveKey == "wild_randomizer"
-        or ev.saveKey == "wild_legendaries"
-        or ev.saveKey == "static_randomizer"
-        or ev.saveKey == "static_legendaries"
-        or ev.saveKey == "starter_randomizer"
-        or ev.saveKey == "starter_legendaries"
-        or ev.saveKey == "gift_randomizer"
-        or ev.saveKey == "gift_legendaries"
-        or ev.saveKey == "trainer_randomizer"
-        or ev.saveKey == "trainer_legendaries"
-        or ev.saveKey == "trainer_bosses"
-        or ev.saveKey == "item_randomizer") then
-      mod.save:set(ev.saveKey, ev.value)
-      if ev.saveKey == "forced_set_mode" and ev.value == true then
-        local rule = mod.exports.forcedSetMode
-        if rule then rule.force(mod.game) end
-      end
+  -- The ruleset is configured in the player's bedroom instead of during Oak's
+  -- speech: the new game runs exactly as Gold ships it, and the settings
+  -- screen opens by itself the first time the player spawns at home.  `boot`
+  -- is the one map load that follows a new game (Game2:startWorld), so a
+  -- warp back upstairs later never reopens it, and the save flag keeps it to
+  -- once per run even across the first save.
+  mod.events:on("map.entered", function(ev)
+    if not ev or ev.mapId ~= "PLAYERS_HOUSE_2F" or ev.via ~= "boot" then
+      return
     end
+    if mod.save:get("settings_prompted") == true then return end
+    mod.save:set("settings_prompted", true)
+    local game = mod.game
+    if not game or started(game) then return end
+    mod.ui.push(game, SETTINGS_SCREEN)
   end)
 
   mod.hooks:wrap("ui.start_menu.items", function(next, game, items)

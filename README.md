@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.25.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.27.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -91,8 +91,9 @@ The mod contains no ROM, game assets, or ROM-derived content.
 4. Enable **Gen1Recomp++ Randomizer Nuzlocke**.
 5. Launch Pokémon Gold and begin a new game.
 
-Professor Oak presents the complete ruleset during the new-game introduction.
-Settings can also be reviewed later from:
+The new game plays out exactly as Gold ships it. The Nuzlocke settings screen
+opens by itself the first time the player spawns in their bedroom, and can be
+reopened later from:
 
 ```text
 START → NUZLOCKE
@@ -100,10 +101,12 @@ START → NUZLOCKE
 
 ## Configuring a run
 
-Every configurable feature is available during Oak's introduction and from the
-in-game Nuzlocke settings screen until the run starts. Obtaining any Ball
-permanently locks the ruleset for that save. The screen remains available as a
-read-only summary of the active rules and current level cap.
+Every configurable feature is set from the Nuzlocke settings screen, which
+opens automatically on the first spawn at home and stays editable from the
+START menu until the run starts. Pressing SELECT on any row explains what that
+rule does and what each of its values means. Obtaining any Ball permanently
+locks the ruleset for that save. The screen remains available as a read-only
+summary of the active rules and current level cap.
 
 | Setting | Default | Options | Behaviour |
 | --- | :---: | --- | --- |
@@ -111,33 +114,33 @@ read-only summary of the active rules and current level cap.
 | `DUPES` | `SKIP` | `SKIP` / `LOSE` / `OFF` | Chooses how previously caught evolution families affect a new area. |
 | `SHINY CLAUSE` | `ON` | `ON` / `OFF` | Allows shiny Pokémon to bypass encounter limits. |
 | `PERMADEATH` | `ON` | `ON` / `OFF` | Permanently removes Pokémon that faint. |
-| `MANDATORY NAMES` | `ON` | `ON` / `OFF` | Requires every obtained Pokémon to have a custom nickname. |
+| `NICKNAMES` | `ON` | `ON` / `OFF` | Requires every obtained Pokémon to have a custom nickname. |
 | `LEVEL CAPS` | `ON` | `ON` / `OFF` | Prevents the party from levelling beyond the active challenge cap. |
 | `LEVEL SCALING` | `ON` | `ON` / `OFF` | Scales weaker wild Pokémon, trainers, and Kanto leaders. |
-| `WILD SCALE` | `-20%` | `-0%` … `-50%` | How far below the party maximum wild Pokémon are scaled. |
-| `TRAINER SCALE` | `-20%` | `-0%` … `-50%` | How far below the party maximum ordinary trainers are scaled. |
+| `WILD LVL` | `-20%` | `-0%` … `-50%` | How far below the party maximum wild Pokémon are scaled. |
+| `TRAINER LVL` | `-20%` | `-0%` … `-50%` | How far below the party maximum ordinary trainers are scaled. |
 | `SET MODE` | `ON` | `ON` / `OFF` | Locks Battle Style to `SET`. |
-| `NO BATTLE ITEMS` | `OFF` | `OFF` / `ON` | Forbids non-Ball items during battle. |
+| `NO ITEMS` | `OFF` | `OFF` / `ON` | Forbids non-Ball items during battle. |
 | `STATIC` | `AREA` | `AREA` / `BONUS` / `FORBID` | Controls scripted static encounters. |
 | `GIFTS` | `BONUS` | `BONUS` / `AREA` | Controls gifted Pokémon and Eggs. |
 | `BREEDING` | `FORBID` | `FORBID` / `AREA` / `BONUS` | Controls Eggs produced by the Day Care. |
-| `WILD MODE` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls ordinary wild species randomization. |
+| `WILDS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls ordinary wild species randomization. |
 | `WILD LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether ordinary wild slots may become legendary Pokémon. |
 | `STATICS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls scripted static species randomization. |
 | `STATIC LEG` | `MATCH` | `MATCH` / `ANY` | Controls whether legendary status must match the original static encounter. |
 | `STARTERS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls the three starter species. |
-| `STARTER LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether a starter may be legendary or mythical. |
-| `GIFT MONS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls gifted Pokémon and scripted Egg species randomization. |
+| `START LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether a starter may be legendary or mythical. |
+| `GIFT MON` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls gifted Pokémon and scripted Egg species randomization. |
 | `GIFT LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether non-Egg gifts may become legendary or mythical. |
 | `TRAINERS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls trainer party species randomization. |
-| `TRAINER LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether trainer slots may become legendary or mythical. |
+| `TRAIN LEG` | `EXCLUDE` | `EXCLUDE` / `ALLOW` | Controls whether trainer slots may become legendary or mythical. |
 | `BOSSES` | `INCLUDE` | `INCLUDE` / `EXCLUDE` | Controls whether major boss teams are randomized. |
 | `ITEMS` | `OFF` | `OFF` / `BALANCED` / `CHAOS` | Controls found, hidden, gifted, berry-tree, and TM reward item randomization. |
 | `SEED` | Generated | Read-only | Shows the stable seed used for this run's randomization. |
 
 ## Wild randomization
 
-`WILD MODE` changes species while preserving the encounter's original
+`WILDS` changes species while preserving the encounter's original
 level. The existing level-scaling rule then evaluates and scales that final
 Pokémon normally.
 
@@ -207,7 +210,7 @@ Revisiting a Ball or reloading the save cannot reroll the choices.
 | `BALANCED` | Replaces each original with a similar-BST base-stage Pokémon that can evolve. |
 | `CHAOS` | Chooses from the complete permitted Gen 1 and Gen 2 species pool without BST or evolution-stage limits. |
 
-`STARTER LEG` excludes legendary and mythical Pokémon by default. `ALLOW`
+`START LEG` excludes legendary and mythical Pokémon by default. `ALLOW`
 adds them to the `CHAOS` pool. Balanced starters remain base-stage Pokémon, so
 the legendary option does not weaken that mode's evolution-stage rule.
 
@@ -223,7 +226,7 @@ replace the rival's other party members when enabled.
 
 ## Gift randomization
 
-`GIFT MONS` randomizes Gold's scripted gift Pokémon, Togepi's Egg, Game Corner
+`GIFT MON` randomizes Gold's scripted gift Pokémon, Togepi's Egg, Game Corner
 Pokémon prizes, and Mania's Shuckie. Each replacement is deterministic for the
 run and uses the same `BALANCED` and `CHAOS` rules as the other species
 randomizers.
@@ -239,7 +242,7 @@ Scripted Eggs always map to a nonlegendary, hatchable base-stage species. This
 restriction applies even when `GIFT LEG` is set to `ALLOW`. The legendary
 setting affects non-Egg gifts only.
 
-The `GIFTS` Nuzlocke policy remains independent. `GIFT MONS` decides which
+The `GIFTS` Nuzlocke policy remains independent. `GIFT MON` decides which
 species is received, while `GIFTS` decides whether receiving it consumes the
 area's encounter. Day-Care breeding Eggs are governed by `BREEDING` and are
 not species-randomized by this feature.
@@ -262,7 +265,7 @@ level first. Each replacement then receives the latest four level-up moves it
 can legally know at that final level, replacing moves authored for the original
 species.
 
-`TRAINER LEG` excludes legendary and mythical replacements by default.
+`TRAIN LEG` excludes legendary and mythical replacements by default.
 `ALLOW` adds them to the available pool. Balanced mode still requires its
 evolution-stage and similar-BST match.
 
@@ -500,8 +503,8 @@ Defeating Red removes the level cap entirely.
 Scaling is based only on the highest-level non-Egg Pokémon currently in the
 party. Boxed and Day-Care Pokémon are ignored.
 
-Wild Pokémon and trainers are scaled separately. `WILD SCALE` and
-`TRAINER SCALE` each set how far below the party maximum that group aims, in
+Wild Pokémon and trainers are scaled separately. `WILD LVL` and
+`TRAINER LVL` each set how far below the party maximum that group aims, in
 steps of 5% from `-0%` to `-50%` (both default to `-20%`). A smaller percentage
 means tougher opponents. For ordinary wild Pokémon and trainers, the target is:
 
