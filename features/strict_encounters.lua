@@ -14,6 +14,67 @@ local function percent(mod, key)
   return math.min(math.max(value, 0), 50)
 end
 
+-- SELECT on a settings row explains the rule and every value it can take.
+-- Written for Gold's dialogue box: \n is the second visible line and \f is a
+-- page break, so each page is at most two lines of eighteen columns.
+local HELP = {
+  strict_encounters = "Only the first\nPOKEMON met in\fan area may be\n"
+    .. "caught.\fOFF lifts the\nlimit entirely.",
+  dupes_mode = "When the first\nmeeting is a\fspecies you have\nowned:\f"
+    .. "SKIP: meet again.\nLOSE: no catch.\fOFF: allow the\nduplicate.",
+  shiny_clause = "Any shiny may be\ncaught, even in\fa used or\n"
+    .. "duplicate area.",
+  permadeath = "Fainted POKEMON\nare released for\fgood, and\n"
+    .. "REVIVES refused.",
+  mandatory_nicknames = "Every POKEMON you\nobtain must be\fgiven a custom\n"
+    .. "nickname.",
+  level_caps = "EXP, CANDY and\nDAY-CARE growth\fstop at the next\n"
+    .. "major battle's\flevel.",
+  level_scaling = "Weak wild and\ntrainer POKEMON\fare raised toward\n"
+    .. "your own level.",
+  wild_scaling_percent = "How far below\nyour best level\fwild POKEMON\n"
+    .. "aim.\f-0% is hardest,\n-50% is easiest.",
+  trainer_scaling_percent = "How far below\nyour best level\ftrainers aim.\f"
+    .. "-0% is hardest,\n-50% is easiest.\fGYM LEADERS are\nnot affected.",
+  forced_set_mode = "Battle style is\nlocked to SET:\fno free switch\n"
+    .. "after a faint.",
+  no_battle_items = "No POTIONS or\nother items may\fbe used in\n"
+    .. "battle.\fBALLS are still\nallowed.",
+  static_encounters = "Scripted battles\nlike the RED\fGYARADOS.\f"
+    .. "AREA: uses that\narea's catch.\fBONUS: free.\nFORBID: no catch.",
+  gift_encounters = "Gift POKEMON and\nscripted EGGS.\fBONUS: free.\n"
+    .. "AREA: uses that\farea's catch.",
+  breeding_eggs = "EGGS from the\nDAY-CARE.\fFORBID: none.\nAREA: one only.\f"
+    .. "BONUS: no limit.",
+  wild_randomizer = "Wild species are\nreplaced.\fBALANCED: similar\n"
+    .. "strength.\fCHAOS: anything.\nOFF: vanilla.",
+  wild_legendaries = "EXCLUDE keeps\nlegendaries out\fof ordinary\n"
+    .. "grass and water.",
+  static_randomizer = "Scripted static\nbattles are\freplaced.\f"
+    .. "BALANCED: similar\nstrength.\fCHAOS: anything.\nOFF: vanilla.",
+  static_legendaries = "MATCH keeps a\nlegendary static\fa legendary.\f"
+    .. "ANY allows any\nspecies.",
+  starter_randomizer = "ELM's three\nstarters are\freplaced.\f"
+    .. "BALANCED: similar\nstrength.\fCHAOS: anything.\nOFF: vanilla.",
+  starter_legendaries = "EXCLUDE keeps\nlegendaries out\fof the three\n"
+    .. "starter choices.",
+  gift_randomizer = "Gift POKEMON and\nscripted EGGS\fare replaced.\f"
+    .. "BALANCED: similar\nstrength.\fCHAOS: anything.\nOFF: vanilla.",
+  gift_legendaries = "EXCLUDE keeps\nlegendaries out\fof gifts and\nEGGS.",
+  trainer_randomizer = "Trainer parties\nare replaced.\f"
+    .. "Party size, final\nlevels and items\fare kept.",
+  trainer_legendaries = "EXCLUDE keeps\nlegendaries out\fof trainer\n"
+    .. "parties.",
+  trainer_bosses = "INCLUDE also\nrandomizes GYM\fLEADERS and your\nrival.\f"
+    .. "EXCLUDE leaves\nthem as they are.",
+  item_randomizer = "Found, hidden and\ngifted items,\fTM rewards and\n"
+    .. "berry trees.\fBALANCED: similar\nprice.\fCHAOS: anything.\f"
+    .. "KEY ITEMS, HMS\nand BALL gifts\fnever change.",
+  randomizer_seed = "The number every\nrandom choice is\fbuilt from.\f"
+    .. "The same seed\nalways gives the\fsame run.",
+  done = "Closes this\nscreen.\fThe rules lock\nwhen you get\fyour first BALL.",
+}
+
 function StrictEncounters.install(mod)
   local started
   mod.content.screens:register(SETTINGS_SCREEN, {
@@ -93,7 +154,11 @@ function StrictEncounters.install(mod)
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
         wrap = true,
-        footer = locked and "LOCKED  B:BACK" or "A:CHANGE  B:BACK",
+        footer = locked and "LOCKED SEL:INFO" or "A:SET SEL:INFO B:BACK",
+        onSelectKey = function(item)
+          local help = item and HELP[item.value]
+          if help then game.stack:push(TextBox.new(game, help)) end
+        end,
         onChoose = function(item, menu)
           if item.value == "done" then
             menu:close()

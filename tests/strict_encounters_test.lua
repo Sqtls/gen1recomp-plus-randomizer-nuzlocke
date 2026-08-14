@@ -165,7 +165,8 @@ h.save.gift_randomizer = "balanced"
 h.save.trainer_randomizer = "balanced"
 
 
-local game = {}
+local pushedBox
+local game = { stack = { push = function(_, screen) pushedBox = screen end } }
 local startHook = h.hooks["ui.start_menu.items"]
 eq(type(startHook), "function", "active-save settings hook is registered")
 local rows = startHook(function(_, items) return items end, game, {
@@ -177,6 +178,27 @@ rows[2].onSelect(game)
 eq(h:pushed().id, "Gen1RecompPlusNuzlockeSettings",
   "START row opens the settings screen")
 local settings = h.screens.Gen1RecompPlusNuzlockeSettings.new(game)
+
+-- SELECT explains the hovered rule and every value it can take. Gold's box
+-- shows two lines of eighteen columns per page, so no page may exceed that.
+eq(type(settings.opts.onSelectKey), "function",
+  "SELECT is wired up on the settings screen")
+for _, item in ipairs(settings.items) do
+  pushedBox = nil
+  settings.opts.onSelectKey(item, settings)
+  eq(pushedBox ~= nil, true, item.label .. " explains itself on SELECT")
+  eq(pushedBox.isTextBox, true, item.label .. " uses Gold's dialogue box")
+  eq(#pushedBox.pages > 0, true, item.label .. " help paginates")
+  for _, page in ipairs(pushedBox.pages) do
+    eq(#page <= 2, true, item.label .. " help page fits two lines")
+    for _, line in ipairs(page) do
+      eq(#line <= 18, true, item.label .. " help line fits the box: " .. line)
+    end
+  end
+end
+eq(settings.opts.footer:match("SEL:INFO") ~= nil, true,
+  "the footer advertises SELECT")
+
 eq(settings.items[1].right, "ON", "active settings show strict encounters")
 settings.opts.onChoose(settings.items[1], settings)
 eq(h.save.strict_encounters, false,
@@ -451,7 +473,7 @@ game.stack = {
   push = function(_, screen) lockedMessage = screen end,
 }
 local lockedSettings = h.screens.Gen1RecompPlusNuzlockeSettings.new(game)
-eq(lockedSettings.opts.footer, "LOCKED  B:BACK",
+eq(lockedSettings.opts.footer, "LOCKED SEL:INFO",
   "active-run settings clearly show that rules are locked")
 local strictBeforeLockAttempt = h.save.strict_encounters
 lockedSettings.opts.onChoose(lockedSettings.items[1], lockedSettings)
@@ -1047,7 +1069,7 @@ allowed = reloadedCatch(function() return true end, {
 eq(allowed, false, "failed route remains blocked after save reload")
 local reloadedSettings =
   reloaded.screens.Gen1RecompPlusNuzlockeSettings.new(reloadedGame)
-eq(reloadedSettings.opts.footer, "LOCKED  B:BACK",
+eq(reloadedSettings.opts.footer, "LOCKED SEL:INFO",
   "rules remain locked after save reload")
 
 -- A caught route proves an older mod version already saw the player use a

@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.26.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.27.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -103,9 +103,10 @@ START → NUZLOCKE
 
 Every configurable feature is set from the Nuzlocke settings screen, which
 opens automatically on the first spawn at home and stays editable from the
-START menu until the run starts. Obtaining any Ball permanently locks the
-ruleset for that save. The screen remains available as a
-read-only summary of the active rules and current level cap.
+START menu until the run starts. Pressing SELECT on any row explains what that
+rule does and what each of its values means. Obtaining any Ball permanently
+locks the ruleset for that save. The screen remains available as a read-only
+summary of the active rules and current level cap.
 
 | Setting | Default | Options | Behaviour |
 | --- | :---: | --- | --- |
