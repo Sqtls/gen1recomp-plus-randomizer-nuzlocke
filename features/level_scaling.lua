@@ -17,9 +17,14 @@ local function highestPartyLevel(party)
   return highest
 end
 
-local function scaledLevel(vanilla, party, cap)
+-- `percent` is how far BELOW the party's best level the scaler aims, so 20
+-- means "80% of the party max".  Scaling only ever raises a level: the vanilla
+-- level is the floor, so an encounter the cart already sets above the target
+-- (a level 10 wild against a level 9 party) is left exactly as Gold shipped it.
+local function scaledLevel(vanilla, party, cap, percent)
   local random = love and love.math and love.math.random or math.random
-  local target = math.floor(highestPartyLevel(party) * 0.8)
+  local share = (100 - (percent or 20)) / 100
+  local target = math.floor(highestPartyLevel(party) * share)
     + random(-2, 2)
   return math.min(math.max(vanilla or 1, target), cap or 100)
 end
@@ -53,7 +58,7 @@ local function bossTarget(classId, cap)
 end
 
 local function scaledTrainerParty(trainer, playerParty, data, challengeCap,
-    regularCap)
+    regularCap, percent)
   local source = trainer.party or {}
   local target = bossTarget(trainer.classId or trainer.class, challengeCap)
   local ace = 0
@@ -66,7 +71,7 @@ local function scaledTrainerParty(trainer, playerParty, data, challengeCap,
   local party = {}
   for index, mon in ipairs(source) do
     local level = target and math.min((mon.level or 1) + delta, target)
-      or scaledLevel(mon.level, playerParty, regularCap)
+      or scaledLevel(mon.level, playerParty, regularCap, percent)
     local row = rows[index]
     local explicitMoves = row and row.moves and #row.moves > 0
     party[index] = rebuild(mon, data, level, false, explicitMoves)
@@ -77,6 +82,12 @@ end
 function LevelScaling.install(mod)
   local function enabled()
     return mod.save:get("level_scaling", true) == true
+  end
+
+  -- Stored as "percent below the party's best level", in steps of 5.
+  local function percentFor(key)
+    local value = tonumber(mod.save:get(key, 20)) or 20
+    return math.min(math.max(value, 0), 50)
   end
 
   local function caps(game)
@@ -96,7 +107,8 @@ function LevelScaling.install(mod)
     local game = world and world.game or mod.game
     local _, cap = caps(game)
     local scaled = scaledLevel(level,
-      game and game.save and game.save.party, cap)
+      game and game.save and game.save.party, cap,
+      percentFor("wild_scaling_percent"))
     local suppressed = repelSuppresses(world, scaled, ...)
     if not suppressed then
       pendingWildLevel = { vanilla = level, scaled = scaled }
@@ -112,7 +124,7 @@ function LevelScaling.install(mod)
     return scaledTrainerParty({ classId = classId, member = member,
         party = result },
       game and game.save and game.save.party, game and game.data,
-      challengeCap, regularCap)
+      challengeCap, regularCap, percentFor("trainer_scaling_percent"))
   end, 1000)
 
   local battleNew = Battle.new
@@ -127,7 +139,8 @@ function LevelScaling.install(mod)
             and pendingWildLevel.vanilla == opts.wild.level then
           level = pendingWildLevel.scaled
         else
-          level = scaledLevel(opts.wild.level, opts.party, cap)
+          level = scaledLevel(opts.wild.level, opts.party, cap,
+            percentFor("wild_scaling_percent"))
         end
         pendingWildLevel = nil
         opts.wild = rebuild(opts.wild, opts.data,

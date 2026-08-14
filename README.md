@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.24.1-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.25.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -114,6 +114,8 @@ read-only summary of the active rules and current level cap.
 | `MANDATORY NAMES` | `ON` | `ON` / `OFF` | Requires every obtained Pokémon to have a custom nickname. |
 | `LEVEL CAPS` | `ON` | `ON` / `OFF` | Prevents the party from levelling beyond the active challenge cap. |
 | `LEVEL SCALING` | `ON` | `ON` / `OFF` | Scales weaker wild Pokémon, trainers, and Kanto leaders. |
+| `WILD SCALE` | `-20%` | `-0%` … `-50%` | How far below the party maximum wild Pokémon are scaled. |
+| `TRAINER SCALE` | `-20%` | `-0%` … `-50%` | How far below the party maximum ordinary trainers are scaled. |
 | `SET MODE` | `ON` | `ON` / `OFF` | Locks Battle Style to `SET`. |
 | `NO BATTLE ITEMS` | `OFF` | `OFF` / `ON` | Forbids non-Ball items during battle. |
 | `STATIC` | `AREA` | `AREA` / `BONUS` / `FORBID` | Controls scripted static encounters. |
@@ -498,10 +500,13 @@ Defeating Red removes the level cap entirely.
 Scaling is based only on the highest-level non-Egg Pokémon currently in the
 party. Boxed and Day-Care Pokémon are ignored.
 
-For ordinary wild Pokémon and trainers, the target is:
+Wild Pokémon and trainers are scaled separately. `WILD SCALE` and
+`TRAINER SCALE` each set how far below the party maximum that group aims, in
+steps of 5% from `-0%` to `-50%` (both default to `-20%`). A smaller percentage
+means tougher opponents. For ordinary wild Pokémon and trainers, the target is:
 
 ```text
-floor(highest party level × 80%) + random variance from -2 to +2
+floor(highest party level × (100% - scale)) + random variance from -2 to +2
 ```
 
 The final level is never lower than the vanilla level and never higher than

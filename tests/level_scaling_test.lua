@@ -219,6 +219,35 @@ eq(table.concat(battle.trainer.party[1].moves, ","),
   "MOVE13,MOVE14,MOVE15,MOVE16",
   "scaled ordinary trainers learn their latest four natural moves")
 
+-- Wilds and trainers carry their own "percent below the party max".
+saved.wild_scaling_percent = 10
+saved.trainer_scaling_percent = 40
+battle = Battle.new({
+  data = mod.game.data,
+  party = mod.game.save.party,
+  wild = { species = "RATTATA", level = 5, moves = {}, dvs = {} },
+})
+eq(battle.wild.level, 18, "wilds scale to their own percent below the maximum")
+battle = trainerBattle({
+  data = mod.game.data,
+  party = mod.game.save.party,
+  trainer = { classId = "YOUNGSTER", party = {
+    { species = "RATTATA", level = 5, moves = {}, dvs = {} },
+  } },
+})
+eq(battle.trainer.party[1].level, 12,
+  "trainers scale to their own percent, independently of wilds")
+saved.wild_scaling_percent = 100
+battle = Battle.new({
+  data = mod.game.data,
+  party = mod.game.save.party,
+  wild = { species = "RATTATA", level = 5, moves = {}, dvs = {} },
+})
+eq(battle.wild.level, 10,
+  "an out-of-range percent is clamped to the 50 percent floor")
+saved.wild_scaling_percent = nil
+saved.trainer_scaling_percent = nil
+
 saved.level_scaling = false
 local vanillaTrainer = hooks["trainer.party"](
   function(_, _, party) return party end, "YOUNGSTER", 1,
