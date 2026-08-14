@@ -22,10 +22,10 @@ scaled, and a failed run ends with a complete run report.
 > Pokémon Red, Blue, or Yellow.
 
 > [!NOTE]
-> Wild, static, starter, gift, and trainer Pokémon randomization are implemented
-> now. Roaming, item, move, ability, and evolution randomizers are planned
-> as focused follow-up features and are **not yet included** in the current
-> release.
+> Wild, static, starter, gift, and trainer Pokémon randomization and item
+> randomization are implemented now. Roaming, move, ability, and evolution
+> randomizers are planned as focused follow-up features and are **not yet
+> included** in the current release.
 
 ## Contents
 
@@ -104,7 +104,9 @@ START → RULESET
 Every configurable feature is set from the Nuzlocke settings screen, which
 opens automatically on the first spawn at home and stays editable from the
 START menu until the run starts. Pressing SELECT on any row explains what that
-rule does and what each of its values means. Obtaining any Ball permanently
+rule does and what each of its values means. The list reads as two pages: the
+header changes to `RANDOMIZER SETTINGS` from the first randomizer row down.
+Obtaining any Ball permanently
 locks the ruleset for that save. The screen remains available as a read-only
 summary of the active rules and current level cap.
 
@@ -296,8 +298,10 @@ Quantities are preserved.
 > [!NOTE]
 > Key items and HMs are never randomized, in either direction: they are never
 > replaced and never appear as a replacement, so no run can be made
-> unfinishable. The Bug-Catching Contest's PARK BALL and the unused item rows
-> are excluded from the pool for the same reason. APRICORN trees also keep
+> unfinishable. Scripted Poke Ball gifts are never replaced either, so Elm's
+> aide still hands over the run's first catching stock, though Poke Balls do
+> stay in the replacement pool. The Bug-Catching Contest's PARK BALL and the
+> unused item rows are excluded from the pool for the same reason. APRICORN trees also keep
 > their own apricorn, so Kurt's custom Balls stay reachable; ordinary berry
 > trees are randomized, and each tree keeps one fruit for the whole run.
 
@@ -557,7 +561,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.23.0 |
+| Current mod version | 0.27.1 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly
