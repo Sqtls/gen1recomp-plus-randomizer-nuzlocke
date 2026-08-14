@@ -212,12 +212,32 @@ for index, item in ipairs(settings.items) do
   local expected = "NUZLOCKE SETTINGS"
   if item.value:match("randomizer") or item.value:match("legendaries")
       or item.value == "trainer_bosses" then
-    expected = "RANDOMIZERS"
+    expected = "RANDOMIZER SETTINGS"
   end
   eq(titleAt(index), expected, "header for " .. item.label)
 end
 eq(titleAt(1), "NUZLOCKE SETTINGS", "scrolling back up restores the header")
+
+-- Crossing onto the randomizers turns the page: the row entered sits at the
+-- top of the list, and coming back up puts it at the bottom.
+local firstRandomizer
+for index, item in ipairs(settings.items) do
+  if item.value == "wild_randomizer" then firstRandomizer = index break end
+end
+settings.rows = 7
+settings.index = firstRandomizer - 1
+settings.title = "NUZLOCKE SETTINGS"
+settings.scroll = 0
+settings.index = firstRandomizer
+settings:update(0)
+eq(settings.scroll, firstRandomizer - 1,
+  "the first randomizer row starts the page at the top")
+settings.index = firstRandomizer - 1
+settings:update(0)
+eq(settings.scroll, firstRandomizer - 1 - 7,
+  "stepping back up puts the rules page's last row at the bottom")
 settings.index = 1
+settings:update(0)
 
 -- ListMenu draws the label from x=16 and right-aligns the value at x=152: with
 -- an 8px glyph that is seventeen columns, so a row needs to stay under it or

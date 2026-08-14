@@ -87,8 +87,20 @@ local RANDOMIZER_ROWS = {
 }
 
 local function titleFor(item)
-  if item and RANDOMIZER_ROWS[item.value] then return "RANDOMIZERS" end
+  if item and RANDOMIZER_ROWS[item.value] then return "RANDOMIZER SETTINGS" end
   return "NUZLOCKE SETTINGS"
+end
+
+-- Crossing between the two pages scrolls like a page turn rather than one row:
+-- going down, the row entered sits at the top of the list; coming back up it
+-- sits at the bottom, so the page the cursor left is fully on screen.
+local function turnPage(menu, downward)
+  local rows = menu.rows or 7
+  if downward then
+    menu.scroll = menu.index - 1
+  else
+    menu.scroll = math.max(0, menu.index - rows)
+  end
 end
 
 function StrictEncounters.install(mod)
@@ -295,8 +307,16 @@ function StrictEncounters.install(mod)
       -- randomizers.
       local update = screen.update
       screen.update = function(self, ...)
-        self.title = titleFor(self.items[self.index])
-        if update then return update(self, ...) end
+        local result
+        if update then result = update(self, ...) end
+        local title = titleFor(self.items[self.index])
+        -- The randomizers are the lower page, so entering them is always the
+        -- downward turn and leaving them the upward one.
+        if title ~= self.title then
+          turnPage(self, RANDOMIZER_ROWS[self.items[self.index].value] ~= nil)
+        end
+        self.title = title
+        return result
       end
       return screen
     end,
