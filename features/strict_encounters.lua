@@ -75,6 +75,22 @@ local HELP = {
   done = "Closes this\nscreen.\fThe rules lock\nwhen you get\fyour first BALL.",
 }
 
+-- The list is one menu but reads as two pages: the header switches the moment
+-- the cursor reaches the first randomizer row and switches back on the way up.
+local RANDOMIZER_ROWS = {
+  wild_randomizer = true, wild_legendaries = true,
+  static_randomizer = true, static_legendaries = true,
+  starter_randomizer = true, starter_legendaries = true,
+  gift_randomizer = true, gift_legendaries = true,
+  trainer_randomizer = true, trainer_legendaries = true,
+  trainer_bosses = true, item_randomizer = true, randomizer_seed = true,
+}
+
+local function titleFor(item)
+  if item and RANDOMIZER_ROWS[item.value] then return "RANDOMIZERS" end
+  return "NUZLOCKE SETTINGS"
+end
+
 function StrictEncounters.install(mod)
   local started
   mod.content.screens:register(SETTINGS_SCREEN, {
@@ -152,7 +168,7 @@ function StrictEncounters.install(mod)
         items[27].right = tostring(randomizer and randomizer.seed() or "-")
       end
       refresh()
-      return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
+      local screen = mod.ui.ListMenu.new(game, titleFor(items[1]), items, {
         wrap = true,
         -- One line of eighteen columns: ListMenu wraps a longer footer onto a
         -- second line that draws straight over the list rows.
@@ -274,6 +290,15 @@ function StrictEncounters.install(mod)
           refresh()
         end,
       })
+      -- ListMenu reads self.title every frame, so retitling as the cursor
+      -- moves turns the one list into two pages: the Nuzlocke rules, then the
+      -- randomizers.
+      local update = screen.update
+      screen.update = function(self, ...)
+        self.title = titleFor(self.items[self.index])
+        if update then return update(self, ...) end
+      end
+      return screen
     end,
   })
 

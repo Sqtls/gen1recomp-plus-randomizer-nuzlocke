@@ -109,7 +109,7 @@ local function newMod(savedValues)
       ListMenu = {
         new = function(game, title, items, opts)
           return { game = game, title = title, items = items, opts = opts,
-            close = function(self) self.closed = true end }
+            index = 1, close = function(self) self.closed = true end }
         end,
       },
       push = function(_, id, opts) pushed = { id = id, opts = opts } end,
@@ -200,6 +200,24 @@ eq(settings.opts.footer:match("SEL:INFO") ~= nil, true,
   "the footer advertises SELECT")
 -- A longer footer wraps onto a second line that draws over the list rows.
 eq(#settings.opts.footer <= 18, true, "the footer stays on one line")
+
+-- The header reads as a second page once the cursor reaches the randomizers.
+eq(settings.title, "NUZLOCKE SETTINGS", "the list opens on the rules page")
+local function titleAt(index)
+  settings.index = index
+  settings:update(0)
+  return settings.title
+end
+for index, item in ipairs(settings.items) do
+  local expected = "NUZLOCKE SETTINGS"
+  if item.value:match("randomizer") or item.value:match("legendaries")
+      or item.value == "trainer_bosses" then
+    expected = "RANDOMIZERS"
+  end
+  eq(titleAt(index), expected, "header for " .. item.label)
+end
+eq(titleAt(1), "NUZLOCKE SETTINGS", "scrolling back up restores the header")
+settings.index = 1
 
 -- ListMenu draws the label from x=16 and right-aligns the value at x=152: with
 -- an 8px glyph that is seventeen columns, so a row needs to stay under it or
