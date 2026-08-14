@@ -201,6 +201,14 @@ eq(settings.opts.footer:match("SEL:INFO") ~= nil, true,
 -- A longer footer wraps onto a second line that draws over the list rows.
 eq(#settings.opts.footer <= 18, true, "the footer stays on one line")
 
+-- ListMenu draws the label from x=16 and right-aligns the value at x=152: with
+-- an 8px glyph that is seventeen columns, so a row needs to stay under it or
+-- the value prints on top of its own label.
+for _, item in ipairs(settings.items) do
+  eq(#item.label + #(item.right or "") <= 16, true,
+    "row fits one line: " .. item.label .. " " .. tostring(item.right))
+end
+
 eq(settings.items[1].right, "ON", "active settings show strict encounters")
 settings.opts.onChoose(settings.items[1], settings)
 eq(h.save.strict_encounters, false,
