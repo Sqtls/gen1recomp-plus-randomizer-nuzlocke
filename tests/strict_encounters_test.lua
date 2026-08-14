@@ -127,6 +127,7 @@ local function newMod(savedValues)
     save = saveValues,
     screens = registeredScreens,
     pushed = function() return pushed end,
+    pushedReset = function() pushed = nil end,
     setMap = function(_, mapId) currentMap = mapId end,
     emit = function(_, name, payload)
       for _, callback in ipairs(listeners[name] or {}) do callback(payload) end
@@ -137,220 +138,32 @@ end
 
 local mod, h = newMod()
 assert(loadfile(root .. "/main.lua"))()(mod)
+mod.game = { save = { inventory = {}, party = {} }, data = { items = {} } }
 
--- Oak configures a new run through Gold's public intro steps. Answers are
--- persisted in mod.save, and the active save exposes the same settings from
--- START -> NUZLOCKE.
-local introHook = h.hooks["intro.oak_speech.build"]
-eq(type(introHook), "function", "new-run settings hook is registered")
-local intro = introHook(function(steps) return steps end, {
-  { id = "oak_welcome", kind = "say" },
-  { id = "demo_mon", kind = "demo" },
-})
-eq(intro[2].saveKey, "strict_encounters",
-  "Oak asks whether strict encounters are enabled")
-eq(intro[3].saveKey, "dupes_mode", "Oak asks for duplicate policy")
-eq(intro[3].choices[3], "OFF", "Oak can disable the duplicate clause")
-eq(intro[4].saveKey, "shiny_clause", "Oak asks whether shinies are exempt")
-eq(intro[5].saveKey, "permadeath", "Oak asks whether permadeath is enabled")
-eq(intro[6].saveKey, "mandatory_nicknames",
-  "Oak asks whether nicknames are mandatory")
-eq(intro[7].saveKey, "level_caps",
-  "Oak asks whether level caps are enabled")
-eq(intro[8].saveKey, "level_scaling",
-  "Oak asks whether level scaling is enabled")
-eq(intro[9].saveKey, "forced_set_mode",
-  "Oak asks whether Set mode is enforced")
-eq(intro[10].saveKey, "no_battle_items",
-  "Oak asks whether non-ball battle items are forbidden")
-eq(intro[11].saveKey, "static_encounters",
-  "Oak asks how static encounters are handled")
-eq(intro[11].choices[1], "AREA", "static encounters default to area policy")
-eq(intro[11].choices[2], "BONUS", "Oak offers bonus static encounters")
-eq(intro[11].choices[3], "FORBID", "Oak can forbid static captures")
-eq(intro[12].saveKey, "gift_encounters",
-  "Oak asks how gift encounters are handled")
-eq(intro[12].choices[1], "BONUS", "gifts default to bonus encounters")
-eq(intro[12].choices[2], "AREA", "Oak can make gifts consume their area")
-eq(intro[13].saveKey, "breeding_eggs",
-  "Oak asks how bred Eggs are handled")
-eq(intro[13].choices[1], "FORBID", "bred Eggs default to forbidden")
-eq(intro[13].choices[2], "AREA", "Oak offers one Day-Care area Egg")
-eq(intro[13].choices[3], "BONUS", "Oak offers unrestricted breeding")
-eq(intro[14].saveKey, "wild_randomizer",
-  "Oak asks how ordinary wild Pokemon are randomized")
-eq(intro[14].choices[1], "OFF", "wild randomization defaults to off")
-eq(intro[14].choices[2], "BALANCED", "Oak offers balanced wilds")
-eq(intro[14].choices[3], "CHAOS", "Oak offers chaotic wilds")
-eq(intro[15].saveKey, "wild_legendaries",
-  "Oak asks whether ordinary wilds may become legendary")
-eq(intro[15].choices[1], "EXCLUDE",
-  "ordinary wild legendaries default to excluded")
-eq(intro[15].choices[2], "ALLOW",
-  "Oak can allow legendary ordinary wilds")
-eq(intro[16].saveKey, "static_randomizer",
-  "Oak asks how scripted static Pokemon are randomized")
-eq(intro[16].choices[1], "OFF", "static randomization defaults to off")
-eq(intro[16].choices[2], "BALANCED", "Oak offers balanced statics")
-eq(intro[16].choices[3], "CHAOS", "Oak offers chaotic statics")
-eq(intro[17].saveKey, "static_legendaries",
-  "Oak asks how static legendary species map")
-eq(intro[17].choices[1], "MATCH",
-  "static legendaries default to legendary matching")
-eq(intro[17].choices[2], "ANY",
-  "Oak can allow unrestricted static legendary mapping")
-eq(intro[18].saveKey, "starter_randomizer",
-  "Oak asks how the three starters are randomized")
-eq(intro[18].choices[1], "OFF", "starter randomization defaults to off")
-eq(intro[18].choices[2], "BALANCED", "Oak offers balanced starters")
-eq(intro[18].choices[3], "CHAOS", "Oak offers chaotic starters")
-eq(intro[19].saveKey, "starter_legendaries",
-  "Oak asks whether starters may be legendary")
-eq(intro[19].choices[1], "EXCLUDE",
-  "legendary starters default to excluded")
-eq(intro[19].choices[2], "ALLOW",
-  "Oak can allow legendary starters")
-eq(intro[20].saveKey, "gift_randomizer",
-  "Oak asks how gifted Pokemon are randomized")
-eq(intro[20].choices[1], "OFF", "gift randomization defaults to off")
-eq(intro[20].choices[2], "BALANCED", "Oak offers balanced gifts")
-eq(intro[20].choices[3], "CHAOS", "Oak offers chaotic gifts")
-eq(intro[21].saveKey, "gift_legendaries",
-  "Oak asks whether non-Egg gifts may become legendary")
-eq(intro[21].choices[1], "EXCLUDE",
-  "legendary gifts default to excluded")
-eq(intro[21].choices[2], "ALLOW",
-  "Oak can allow legendary gifts")
-eq(intro[22].saveKey, "trainer_randomizer",
-  "Oak asks how trainer Pokemon are randomized")
-eq(intro[22].choices[1], "OFF", "trainer randomization defaults to off")
-eq(intro[22].choices[2], "BALANCED", "Oak offers balanced trainers")
-eq(intro[22].choices[3], "CHAOS", "Oak offers chaotic trainers")
-eq(intro[23].saveKey, "trainer_legendaries",
-  "Oak asks whether trainers may use legendary Pokemon")
-eq(intro[23].choices[1], "EXCLUDE",
-  "legendary trainer Pokemon default to excluded")
-eq(intro[23].choices[2], "ALLOW",
-  "Oak can allow legendary trainer Pokemon")
-eq(intro[24].saveKey, "trainer_bosses",
-  "Oak asks whether boss teams are randomized")
-eq(intro[24].choices[1], "INCLUDE",
-  "boss teams default to included")
-eq(intro[24].choices[2], "EXCLUDE",
-  "Oak can preserve boss teams")
-eq(intro[25].saveKey, "item_randomizer",
-  "Oak asks whether found items are randomized")
-eq(intro[25].choices[1], "OFF", "item randomization defaults to off")
-eq(intro[25].choices[2], "BALANCED", "Oak offers balanced items")
-eq(intro[25].choices[3], "CHAOS", "Oak offers chaotic items")
-h:emit("intro.oak_speech.answered", {
-  saveKey = "strict_encounters", value = true,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "dupes_mode", value = "skip",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "shiny_clause", value = true,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "permadeath", value = true,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "mandatory_nicknames", value = true,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "level_caps", value = true,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "level_scaling", value = true,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "forced_set_mode", value = true,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "no_battle_items", value = false,
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "static_encounters", value = "area",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "gift_encounters", value = "bonus",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "breeding_eggs", value = "forbid",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "wild_randomizer", value = "balanced",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "wild_legendaries", value = "exclude",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "static_randomizer", value = "balanced",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "static_legendaries", value = "match",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "starter_randomizer", value = "balanced",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "starter_legendaries", value = "exclude",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "gift_randomizer", value = "balanced",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "gift_legendaries", value = "exclude",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "trainer_randomizer", value = "balanced",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "trainer_legendaries", value = "exclude",
-})
-h:emit("intro.oak_speech.answered", {
-  saveKey = "trainer_bosses", value = "include",
-})
-eq(h.save.strict_encounters, true, "new-run strict setting is persisted")
-eq(h.save.dupes_mode, "skip", "new-run duplicate policy is persisted")
-eq(h.save.shiny_clause, true, "new-run shiny clause is persisted")
-eq(h.save.permadeath, true, "new-run permadeath setting is persisted")
-eq(h.save.mandatory_nicknames, true,
-  "new-run mandatory nickname setting is persisted")
-eq(h.save.level_caps, true, "new-run level cap setting is persisted")
-eq(h.save.level_scaling, true, "new-run level scaling setting is persisted")
-eq(h.save.forced_set_mode, true, "new-run Set-mode setting is persisted")
-eq(h.save.no_battle_items, false,
-  "new-run battle-item setting is persisted")
-eq(h.save.static_encounters, "area",
-  "new-run static encounter policy is persisted")
-eq(h.save.gift_encounters, "bonus",
-  "new-run gift encounter policy is persisted")
-eq(h.save.breeding_eggs, "forbid",
-  "new-run breeding Egg policy is persisted")
-eq(h.save.wild_randomizer, "balanced",
-  "new-run wild randomizer mode is persisted")
-eq(h.save.wild_legendaries, "exclude",
-  "new-run ordinary-wild legendary policy is persisted")
-eq(h.save.static_randomizer, "balanced",
-  "new-run static randomizer mode is persisted")
-eq(h.save.static_legendaries, "match",
-  "new-run static legendary policy is persisted")
-eq(h.save.starter_randomizer, "balanced",
-  "new-run starter randomizer mode is persisted")
-eq(h.save.starter_legendaries, "exclude",
-  "new-run starter legendary policy is persisted")
-eq(h.save.gift_randomizer, "balanced",
-  "new-run gift randomizer mode is persisted")
-eq(h.save.gift_legendaries, "exclude",
-  "new-run gift legendary policy is persisted")
-eq(h.save.trainer_randomizer, "balanced",
-  "new-run trainer randomizer mode is persisted")
-eq(h.save.trainer_legendaries, "exclude",
-  "new-run trainer legendary policy is persisted")
-eq(h.save.trainer_bosses, "include",
-  "new-run trainer boss policy is persisted")
+-- A new run plays Gold's intro untouched; the settings screen opens by itself
+-- the first time the player spawns in the bedroom.
+eq(type(h.hooks["intro.oak_speech.build"]), "nil",
+  "Oak's speech is left exactly as Gold ships it")
+h:emit("map.entered", { mapId = "PLAYERS_HOUSE_2F", via = "warp" })
+eq(h:pushed(), nil, "walking back upstairs does not open the settings screen")
+h:emit("map.entered", { mapId = "ROUTE_29", via = "boot" })
+eq(h:pushed(), nil, "no other map opens the settings screen")
+h:emit("map.entered", { mapId = "PLAYERS_HOUSE_2F", via = "boot" })
+eq(h:pushed().id, "Gen1RecompPlusNuzlockeSettings",
+  "spawning at home on a new game opens the settings screen")
+eq(h.save.settings_prompted, true, "the prompt is recorded on the save")
+h.pushedReset()
+h:emit("map.entered", { mapId = "PLAYERS_HOUSE_2F", via = "boot" })
+eq(h:pushed(), nil, "the settings screen only opens once per run")
+
+-- Defaults the rest of this file exercises, as a configured run would leave
+-- them.
+h.save.wild_randomizer = "balanced"
+h.save.static_randomizer = "balanced"
+h.save.starter_randomizer = "balanced"
+h.save.gift_randomizer = "balanced"
+h.save.trainer_randomizer = "balanced"
+
 
 local game = {}
 local startHook = h.hooks["ui.start_menu.items"]

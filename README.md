@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.25.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.26.0-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -91,8 +91,9 @@ The mod contains no ROM, game assets, or ROM-derived content.
 4. Enable **Gen1Recomp++ Randomizer Nuzlocke**.
 5. Launch Pokémon Gold and begin a new game.
 
-Professor Oak presents the complete ruleset during the new-game introduction.
-Settings can also be reviewed later from:
+The new game plays out exactly as Gold ships it. The Nuzlocke settings screen
+opens by itself the first time the player spawns in their bedroom, and can be
+reopened later from:
 
 ```text
 START → NUZLOCKE
@@ -100,9 +101,10 @@ START → NUZLOCKE
 
 ## Configuring a run
 
-Every configurable feature is available during Oak's introduction and from the
-in-game Nuzlocke settings screen until the run starts. Obtaining any Ball
-permanently locks the ruleset for that save. The screen remains available as a
+Every configurable feature is set from the Nuzlocke settings screen, which
+opens automatically on the first spawn at home and stays editable from the
+START menu until the run starts. Obtaining any Ball permanently locks the
+ruleset for that save. The screen remains available as a
 read-only summary of the active rules and current level cap.
 
 | Setting | Default | Options | Behaviour |

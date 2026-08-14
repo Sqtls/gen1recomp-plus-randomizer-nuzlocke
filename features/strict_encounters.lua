@@ -210,198 +210,21 @@ function StrictEncounters.install(mod)
     end,
   })
 
-  mod.hooks:wrap("intro.oak_speech.build", function(next, steps, speech)
-    local result = next(steps, speech)
-    if type(result) ~= "table" then return result end
-    mod.ui.insertStepAfter(result, "oak_welcome", {
-      id = "plus_strict_encounters", kind = "choice", pic = "oak",
-      saveKey = "strict_encounters", text = "Enforce the first\nencounter in each\narea?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_strict_encounters", {
-      id = "plus_dupes_mode", kind = "choice", pic = "oak",
-      saveKey = "dupes_mode", text = "When the first one\nis a duplicate?",
-      choices = { "SKIP", "LOSE", "OFF" },
-      values = { "skip", "lose", "off" },
-    })
-    mod.ui.insertStepAfter(result, "plus_dupes_mode", {
-      id = "plus_shiny_clause", kind = "choice", pic = "oak",
-      saveKey = "shiny_clause",
-      text = "Allow any shiny\nPOK\195\169MON to be\ncaught?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_shiny_clause", {
-      id = "plus_permadeath", kind = "choice", pic = "oak",
-      saveKey = "permadeath", text = "Permanently lose\nfainted POK\195\169MON?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_permadeath", {
-      id = "plus_mandatory_nicknames", kind = "choice", pic = "oak",
-      saveKey = "mandatory_nicknames",
-      text = "Require a nickname\nfor every POK\195\169MON?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_mandatory_nicknames", {
-      id = "plus_level_caps", kind = "choice", pic = "oak",
-      saveKey = "level_caps",
-      text = "Cap levels at each\nmajor challenge?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_level_caps", {
-      id = "plus_level_scaling", kind = "choice", pic = "oak",
-      saveKey = "level_scaling",
-      text = "Scale wild POK\195\169MON\nand trainer levels?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_level_scaling", {
-      id = "plus_forced_set_mode", kind = "choice", pic = "oak",
-      saveKey = "forced_set_mode",
-      text = "Always use SET\nbattle mode?",
-      choices = { "ON", "OFF" }, values = { true, false },
-    })
-    mod.ui.insertStepAfter(result, "plus_forced_set_mode", {
-      id = "plus_no_battle_items", kind = "choice", pic = "oak",
-      saveKey = "no_battle_items",
-      text = "Forbid non-BALL\nitems in battle?",
-      choices = { "OFF", "ON" }, values = { false, true },
-    })
-    mod.ui.insertStepAfter(result, "plus_no_battle_items", {
-      id = "plus_static_encounters", kind = "choice", pic = "oak",
-      saveKey = "static_encounters",
-      text = "How should static\nencounters work?",
-      choices = { "AREA", "BONUS", "FORBID" },
-      values = { "area", "bonus", "forbid" },
-    })
-    mod.ui.insertStepAfter(result, "plus_static_encounters", {
-      id = "plus_gift_encounters", kind = "choice", pic = "oak",
-      saveKey = "gift_encounters",
-      text = "Should gifts use\ntheir area's catch?",
-      choices = { "BONUS", "AREA" }, values = { "bonus", "area" },
-    })
-    mod.ui.insertStepAfter(result, "plus_gift_encounters", {
-      id = "plus_breeding_eggs", kind = "choice", pic = "oak",
-      saveKey = "breeding_eggs",
-      text = "How should bred\nEGGS work?",
-      choices = { "FORBID", "AREA", "BONUS" },
-      values = { "forbid", "area", "bonus" },
-    })
-    mod.ui.insertStepAfter(result, "plus_breeding_eggs", {
-      id = "plus_wild_randomizer", kind = "choice", pic = "oak",
-      saveKey = "wild_randomizer",
-      text = "Randomize ordinary\nwild POK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_wild_randomizer", {
-      id = "plus_wild_legendaries", kind = "choice", pic = "oak",
-      saveKey = "wild_legendaries",
-      text = "Allow LEGENDARIES\nin ordinary wilds?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_wild_legendaries", {
-      id = "plus_static_randomizer", kind = "choice", pic = "oak",
-      saveKey = "static_randomizer",
-      text = "Randomize scripted\nstatic POK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_static_randomizer", {
-      id = "plus_static_legendaries", kind = "choice", pic = "oak",
-      saveKey = "static_legendaries",
-      text = "Map static LEGENDS\nto LEGENDS only?",
-      choices = { "MATCH", "ANY" },
-      values = { "match", "any" },
-    })
-    mod.ui.insertStepAfter(result, "plus_static_legendaries", {
-      id = "plus_starter_randomizer", kind = "choice", pic = "oak",
-      saveKey = "starter_randomizer",
-      text = "Randomize the three\nstarter POK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_starter_randomizer", {
-      id = "plus_starter_legendaries", kind = "choice", pic = "oak",
-      saveKey = "starter_legendaries",
-      text = "Allow a LEGENDARY\nas a starter?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_starter_legendaries", {
-      id = "plus_gift_randomizer", kind = "choice", pic = "oak",
-      saveKey = "gift_randomizer",
-      text = "Randomize gifted\nPOK\195\169MON and EGGS?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_gift_randomizer", {
-      id = "plus_gift_legendaries", kind = "choice", pic = "oak",
-      saveKey = "gift_legendaries",
-      text = "Allow LEGENDARIES\nas non-EGG gifts?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_gift_legendaries", {
-      id = "plus_trainer_randomizer", kind = "choice", pic = "oak",
-      saveKey = "trainer_randomizer",
-      text = "Randomize trainer\nPOK\195\169MON?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    mod.ui.insertStepAfter(result, "plus_trainer_randomizer", {
-      id = "plus_trainer_legendaries", kind = "choice", pic = "oak",
-      saveKey = "trainer_legendaries",
-      text = "Allow LEGENDARIES\non trainer teams?",
-      choices = { "EXCLUDE", "ALLOW" },
-      values = { "exclude", "allow" },
-    })
-    mod.ui.insertStepAfter(result, "plus_trainer_legendaries", {
-      id = "plus_trainer_bosses", kind = "choice", pic = "oak",
-      saveKey = "trainer_bosses",
-      text = "Randomize major\nBOSS trainer teams?",
-      choices = { "INCLUDE", "EXCLUDE" },
-      values = { "include", "exclude" },
-    })
-    mod.ui.insertStepAfter(result, "plus_trainer_bosses", {
-      id = "plus_item_randomizer", kind = "choice", pic = "oak",
-      saveKey = "item_randomizer",
-      text = "Randomize found\nITEMS and TMs?",
-      choices = { "OFF", "BALANCED", "CHAOS" },
-      values = { "off", "balanced", "chaos" },
-    })
-    return result
-  end)
-
-  mod.events:on("intro.oak_speech.answered", function(ev)
-    if ev and (ev.saveKey == "strict_encounters"
-        or ev.saveKey == "dupes_mode" or ev.saveKey == "shiny_clause"
-        or ev.saveKey == "permadeath"
-        or ev.saveKey == "mandatory_nicknames"
-        or ev.saveKey == "level_caps"
-        or ev.saveKey == "level_scaling"
-        or ev.saveKey == "forced_set_mode"
-        or ev.saveKey == "no_battle_items"
-        or ev.saveKey == "static_encounters"
-        or ev.saveKey == "gift_encounters"
-        or ev.saveKey == "breeding_eggs"
-        or ev.saveKey == "wild_randomizer"
-        or ev.saveKey == "wild_legendaries"
-        or ev.saveKey == "static_randomizer"
-        or ev.saveKey == "static_legendaries"
-        or ev.saveKey == "starter_randomizer"
-        or ev.saveKey == "starter_legendaries"
-        or ev.saveKey == "gift_randomizer"
-        or ev.saveKey == "gift_legendaries"
-        or ev.saveKey == "trainer_randomizer"
-        or ev.saveKey == "trainer_legendaries"
-        or ev.saveKey == "trainer_bosses"
-        or ev.saveKey == "item_randomizer") then
-      mod.save:set(ev.saveKey, ev.value)
-      if ev.saveKey == "forced_set_mode" and ev.value == true then
-        local rule = mod.exports.forcedSetMode
-        if rule then rule.force(mod.game) end
-      end
+  -- The ruleset is configured in the player's bedroom instead of during Oak's
+  -- speech: the new game runs exactly as Gold ships it, and the settings
+  -- screen opens by itself the first time the player spawns at home.  `boot`
+  -- is the one map load that follows a new game (Game2:startWorld), so a
+  -- warp back upstairs later never reopens it, and the save flag keeps it to
+  -- once per run even across the first save.
+  mod.events:on("map.entered", function(ev)
+    if not ev or ev.mapId ~= "PLAYERS_HOUSE_2F" or ev.via ~= "boot" then
+      return
     end
+    if mod.save:get("settings_prompted") == true then return end
+    mod.save:set("settings_prompted", true)
+    local game = mod.game
+    if not game or started(game) then return end
+    mod.ui.push(game, SETTINGS_SCREEN)
   end)
 
   mod.hooks:wrap("ui.start_menu.items", function(next, game, items)
