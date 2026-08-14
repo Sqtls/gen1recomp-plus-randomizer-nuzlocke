@@ -121,8 +121,26 @@ for _, def in pairs(items) do
 end
 eq(tm.id:match("^TM_") ~= nil, true, "a TM is only ever replaced by another TM")
 
+-- Elm's aide hands over five POKE_BALLs; that gift is the run's catching stock
+-- and the moment the ruleset locks, so it must survive randomization.
+local balls = run("giveitem", { item = items.POKE_BALL.index, quantity = 5 },
+  { mapId = "ELMS_LAB", object = 2 })
+eq(balls.item, items.POKE_BALL.index, "the aide's POKE BALL gift is preserved")
+eq(balls.quantity, 5, "the aide still hands over five of them")
+
+local drawnBall = false
+for seed = 1, 200 do
+  saved.randomizer_seed = seed
+  if run("giveitem", { item = items.ANTIDOTE.index }).item
+      == items.POKE_BALL.index then
+    drawnBall = true
+  end
+end
+saved.randomizer_seed = 321
+eq(drawnBall, true, "POKE BALL is still reachable as a replacement")
+
 for _, id in ipairs({ "BICYCLE", "SECRETPOTION", "HM_CUT", "HM_SURF",
-    "ITEM_19", "PARK_BALL" }) do
+    "ITEM_19", "PARK_BALL", "POKE_BALL" }) do
   for seed = 1, 20 do
     saved.randomizer_seed = seed
     eq(run("giveitem", { item = items[id].index }).item, items[id].index,
