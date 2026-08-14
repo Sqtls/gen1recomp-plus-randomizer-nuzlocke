@@ -8,6 +8,12 @@ local function setting(mod, key, default)
   return value
 end
 
+-- Level scaling aims this far BELOW the party's best level, in steps of 5.
+local function percent(mod, key)
+  local value = tonumber(setting(mod, key, 20)) or 20
+  return math.min(math.max(value, 0), 50)
+end
+
 function StrictEncounters.install(mod)
   local started
   mod.content.screens:register(SETTINGS_SCREEN, {
@@ -21,6 +27,8 @@ function StrictEncounters.install(mod)
         { label = "MANDATORY NAMES", value = "mandatory_nicknames" },
         { label = "LEVEL CAPS", value = "level_caps" },
         { label = "LEVEL SCALING", value = "level_scaling" },
+        { label = "WILD SCALE", value = "wild_scaling_percent" },
+        { label = "TRAINER SCALE", value = "trainer_scaling_percent" },
         { label = "SET MODE", value = "forced_set_mode" },
         { label = "NO BATTLE ITEMS", value = "no_battle_items" },
         { label = "STATIC", value = "static_encounters" },
@@ -58,27 +66,29 @@ function StrictEncounters.install(mod)
         end
         items[7].right = setting(mod, "level_scaling", true)
           and "ON" or "OFF"
-        items[8].right = setting(mod, "forced_set_mode", true)
+        items[8].right = "-" .. percent(mod, "wild_scaling_percent") .. "%"
+        items[9].right = "-" .. percent(mod, "trainer_scaling_percent") .. "%"
+        items[10].right = setting(mod, "forced_set_mode", true)
           and "ON" or "OFF"
-        items[9].right = setting(mod, "no_battle_items", false)
+        items[11].right = setting(mod, "no_battle_items", false)
           and "ON" or "OFF"
-        items[10].right = setting(mod, "static_encounters", "area"):upper()
-        items[11].right = setting(mod, "gift_encounters", "bonus"):upper()
-        items[12].right = setting(mod, "breeding_eggs", "forbid"):upper()
-        items[13].right = setting(mod, "wild_randomizer", "off"):upper()
-        items[14].right = setting(mod, "wild_legendaries", "exclude"):upper()
-        items[15].right = setting(mod, "static_randomizer", "off"):upper()
-        items[16].right = setting(mod, "static_legendaries", "match"):upper()
-        items[17].right = setting(mod, "starter_randomizer", "off"):upper()
-        items[18].right = setting(mod, "starter_legendaries", "exclude"):upper()
-        items[19].right = setting(mod, "gift_randomizer", "off"):upper()
-        items[20].right = setting(mod, "gift_legendaries", "exclude"):upper()
-        items[21].right = setting(mod, "trainer_randomizer", "off"):upper()
-        items[22].right = setting(mod, "trainer_legendaries", "exclude"):upper()
-        items[23].right = setting(mod, "trainer_bosses", "include"):upper()
-        items[24].right = setting(mod, "item_randomizer", "off"):upper()
+        items[12].right = setting(mod, "static_encounters", "area"):upper()
+        items[13].right = setting(mod, "gift_encounters", "bonus"):upper()
+        items[14].right = setting(mod, "breeding_eggs", "forbid"):upper()
+        items[15].right = setting(mod, "wild_randomizer", "off"):upper()
+        items[16].right = setting(mod, "wild_legendaries", "exclude"):upper()
+        items[17].right = setting(mod, "static_randomizer", "off"):upper()
+        items[18].right = setting(mod, "static_legendaries", "match"):upper()
+        items[19].right = setting(mod, "starter_randomizer", "off"):upper()
+        items[20].right = setting(mod, "starter_legendaries", "exclude"):upper()
+        items[21].right = setting(mod, "gift_randomizer", "off"):upper()
+        items[22].right = setting(mod, "gift_legendaries", "exclude"):upper()
+        items[23].right = setting(mod, "trainer_randomizer", "off"):upper()
+        items[24].right = setting(mod, "trainer_legendaries", "exclude"):upper()
+        items[25].right = setting(mod, "trainer_bosses", "include"):upper()
+        items[26].right = setting(mod, "item_randomizer", "off"):upper()
         local randomizer = mod.exports.wildRandomizer
-        items[25].right = tostring(randomizer and randomizer.seed() or "-")
+        items[27].right = tostring(randomizer and randomizer.seed() or "-")
       end
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
@@ -113,6 +123,10 @@ function StrictEncounters.install(mod)
           elseif item.value == "level_scaling" then
             mod.save:set("level_scaling",
               not setting(mod, "level_scaling", true))
+          elseif item.value == "wild_scaling_percent"
+              or item.value == "trainer_scaling_percent" then
+            local stepped = percent(mod, item.value) + 5
+            mod.save:set(item.value, stepped > 50 and 0 or stepped)
           elseif item.value == "forced_set_mode" then
             local value = not setting(mod, "forced_set_mode", true)
             mod.save:set("forced_set_mode", value)

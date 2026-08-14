@@ -404,167 +404,180 @@ eq(settings.items[7].right, "OFF", "disabled level scaling shows as off")
 settings.opts.onChoose(settings.items[7], settings)
 eq(h.save.level_scaling, true,
   "active save can re-enable level scaling in-game")
-eq(settings.items[8].right, "ON", "forced Set mode defaults to enabled")
+eq(settings.items[8].right, "-20%", "wild scaling defaults to 20% below max")
+eq(settings.items[9].right, "-20%", "trainer scaling defaults to 20% below max")
 settings.opts.onChoose(settings.items[8], settings)
+eq(h.save.wild_scaling_percent, 25, "wild scaling steps in fives")
+eq(settings.items[8].right, "-25%", "the new wild scaling step is displayed")
+eq(settings.items[9].right, "-20%", "trainer scaling is set independently")
+for _ = 1, 6 do settings.opts.onChoose(settings.items[9], settings) end
+eq(h.save.trainer_scaling_percent, 50, "trainer scaling stops at 50%")
+settings.opts.onChoose(settings.items[9], settings)
+eq(h.save.trainer_scaling_percent, 0, "trainer scaling wraps back to 0%")
+eq(settings.items[9].right, "-0%", "the wrapped trainer step is displayed")
+h.save.wild_scaling_percent = nil
+h.save.trainer_scaling_percent = nil
+eq(settings.items[10].right, "ON", "forced Set mode defaults to enabled")
+settings.opts.onChoose(settings.items[10], settings)
 eq(h.save.forced_set_mode, false,
   "active save can disable forced Set mode in-game")
-eq(settings.items[8].right, "OFF", "disabled forced Set mode shows as off")
-settings.opts.onChoose(settings.items[8], settings)
+eq(settings.items[10].right, "OFF", "disabled forced Set mode shows as off")
+settings.opts.onChoose(settings.items[10], settings)
 eq(h.save.forced_set_mode, true,
   "active save can re-enable forced Set mode in-game")
-eq(settings.items[9].right, "OFF", "no battle items defaults to disabled")
-settings.opts.onChoose(settings.items[9], settings)
+eq(settings.items[11].right, "OFF", "no battle items defaults to disabled")
+settings.opts.onChoose(settings.items[11], settings)
 eq(h.save.no_battle_items, true,
   "active save can forbid non-ball battle items in-game")
-eq(settings.items[9].right, "ON", "enabled battle-item rule shows as on")
-settings.opts.onChoose(settings.items[9], settings)
+eq(settings.items[11].right, "ON", "enabled battle-item rule shows as on")
+settings.opts.onChoose(settings.items[11], settings)
 eq(h.save.no_battle_items, false,
   "active save can restore non-ball battle items in-game")
-eq(settings.items[10].right, "AREA", "static encounters default to area policy")
-settings.opts.onChoose(settings.items[10], settings)
+eq(settings.items[12].right, "AREA", "static encounters default to area policy")
+settings.opts.onChoose(settings.items[12], settings)
 eq(h.save.static_encounters, "bonus", "static policy can change to BONUS")
-eq(settings.items[10].right, "BONUS", "bonus static policy is displayed")
-settings.opts.onChoose(settings.items[10], settings)
+eq(settings.items[12].right, "BONUS", "bonus static policy is displayed")
+settings.opts.onChoose(settings.items[12], settings)
 eq(h.save.static_encounters, "forbid", "static policy can change to FORBID")
-settings.opts.onChoose(settings.items[10], settings)
+settings.opts.onChoose(settings.items[12], settings)
 eq(h.save.static_encounters, "area", "static policy cycles back to AREA")
-eq(settings.items[11].right, "BONUS", "gift encounters default to bonus")
-settings.opts.onChoose(settings.items[11], settings)
+eq(settings.items[13].right, "BONUS", "gift encounters default to bonus")
+settings.opts.onChoose(settings.items[13], settings)
 eq(h.save.gift_encounters, "area", "gift policy can change to AREA")
-eq(settings.items[11].right, "AREA", "area gift policy is displayed")
-settings.opts.onChoose(settings.items[11], settings)
+eq(settings.items[13].right, "AREA", "area gift policy is displayed")
+settings.opts.onChoose(settings.items[13], settings)
 eq(h.save.gift_encounters, "bonus", "gift policy cycles back to BONUS")
-eq(settings.items[12].right, "FORBID", "bred Eggs default to forbidden")
-settings.opts.onChoose(settings.items[12], settings)
+eq(settings.items[14].right, "FORBID", "bred Eggs default to forbidden")
+settings.opts.onChoose(settings.items[14], settings)
 eq(h.save.breeding_eggs, "area", "breeding policy can change to AREA")
-eq(settings.items[12].right, "AREA", "AREA breeding policy is displayed")
-settings.opts.onChoose(settings.items[12], settings)
+eq(settings.items[14].right, "AREA", "AREA breeding policy is displayed")
+settings.opts.onChoose(settings.items[14], settings)
 eq(h.save.breeding_eggs, "bonus", "breeding policy can change to BONUS")
-settings.opts.onChoose(settings.items[12], settings)
+settings.opts.onChoose(settings.items[14], settings)
 eq(h.save.breeding_eggs, "forbid", "breeding policy cycles to FORBID")
-eq(settings.items[13].right, "BALANCED",
+eq(settings.items[15].right, "BALANCED",
   "active settings show balanced wild randomization")
-settings.opts.onChoose(settings.items[13], settings)
+settings.opts.onChoose(settings.items[15], settings)
 eq(h.save.wild_randomizer, "chaos", "wild randomizer can change to CHAOS")
-eq(settings.items[13].right, "CHAOS", "chaos randomizer mode is displayed")
-settings.opts.onChoose(settings.items[13], settings)
+eq(settings.items[15].right, "CHAOS", "chaos randomizer mode is displayed")
+settings.opts.onChoose(settings.items[15], settings)
 eq(h.save.wild_randomizer, "off", "wild randomizer can change to OFF")
-settings.opts.onChoose(settings.items[13], settings)
+settings.opts.onChoose(settings.items[15], settings)
 eq(h.save.wild_randomizer, "balanced",
   "wild randomizer cycles back to BALANCED")
-eq(settings.items[14].right, "EXCLUDE",
+eq(settings.items[16].right, "EXCLUDE",
   "ordinary wild legendaries default to excluded")
-settings.opts.onChoose(settings.items[14], settings)
+settings.opts.onChoose(settings.items[16], settings)
 eq(h.save.wild_legendaries, "allow",
   "ordinary wild legendaries can be allowed")
-eq(settings.items[14].right, "ALLOW",
+eq(settings.items[16].right, "ALLOW",
   "allowed ordinary wild legendaries are displayed")
-settings.opts.onChoose(settings.items[14], settings)
+settings.opts.onChoose(settings.items[16], settings)
 eq(h.save.wild_legendaries, "exclude",
   "ordinary wild legendary policy cycles to EXCLUDE")
-eq(settings.items[15].right, "BALANCED",
+eq(settings.items[17].right, "BALANCED",
   "active settings show balanced static randomization")
-settings.opts.onChoose(settings.items[15], settings)
+settings.opts.onChoose(settings.items[17], settings)
 eq(h.save.static_randomizer, "chaos", "static randomizer can change to CHAOS")
-eq(settings.items[15].right, "CHAOS", "chaos static mode is displayed")
-settings.opts.onChoose(settings.items[15], settings)
+eq(settings.items[17].right, "CHAOS", "chaos static mode is displayed")
+settings.opts.onChoose(settings.items[17], settings)
 eq(h.save.static_randomizer, "off", "static randomizer can change to OFF")
-settings.opts.onChoose(settings.items[15], settings)
+settings.opts.onChoose(settings.items[17], settings)
 eq(h.save.static_randomizer, "balanced",
   "static randomizer cycles back to BALANCED")
-eq(settings.items[16].right, "MATCH",
+eq(settings.items[18].right, "MATCH",
   "static legendaries default to matched mapping")
-settings.opts.onChoose(settings.items[16], settings)
+settings.opts.onChoose(settings.items[18], settings)
 eq(h.save.static_legendaries, "any",
   "static legendary mapping can be unrestricted")
-eq(settings.items[16].right, "ANY",
+eq(settings.items[18].right, "ANY",
   "unrestricted static legendary mapping is displayed")
-settings.opts.onChoose(settings.items[16], settings)
+settings.opts.onChoose(settings.items[18], settings)
 eq(h.save.static_legendaries, "match",
   "static legendary mapping cycles to MATCH")
-eq(settings.items[17].right, "BALANCED",
+eq(settings.items[19].right, "BALANCED",
   "active settings show balanced starter randomization")
-settings.opts.onChoose(settings.items[17], settings)
+settings.opts.onChoose(settings.items[19], settings)
 eq(h.save.starter_randomizer, "chaos",
   "starter randomizer can change to CHAOS")
-eq(settings.items[17].right, "CHAOS", "chaos starter mode is displayed")
-settings.opts.onChoose(settings.items[17], settings)
+eq(settings.items[19].right, "CHAOS", "chaos starter mode is displayed")
+settings.opts.onChoose(settings.items[19], settings)
 eq(h.save.starter_randomizer, "off", "starter randomizer can change to OFF")
-settings.opts.onChoose(settings.items[17], settings)
+settings.opts.onChoose(settings.items[19], settings)
 eq(h.save.starter_randomizer, "balanced",
   "starter randomizer cycles back to BALANCED")
-eq(settings.items[18].right, "EXCLUDE",
+eq(settings.items[20].right, "EXCLUDE",
   "legendary starters default to excluded")
-settings.opts.onChoose(settings.items[18], settings)
+settings.opts.onChoose(settings.items[20], settings)
 eq(h.save.starter_legendaries, "allow",
   "legendary starters can be allowed")
-eq(settings.items[18].right, "ALLOW",
+eq(settings.items[20].right, "ALLOW",
   "allowed legendary starters are displayed")
-settings.opts.onChoose(settings.items[18], settings)
+settings.opts.onChoose(settings.items[20], settings)
 eq(h.save.starter_legendaries, "exclude",
   "starter legendary policy cycles to EXCLUDE")
-eq(settings.items[19].right, "BALANCED",
+eq(settings.items[21].right, "BALANCED",
   "active settings show balanced gift randomization")
-settings.opts.onChoose(settings.items[19], settings)
+settings.opts.onChoose(settings.items[21], settings)
 eq(h.save.gift_randomizer, "chaos",
   "gift randomizer can change to CHAOS")
-eq(settings.items[19].right, "CHAOS", "chaos gift mode is displayed")
-settings.opts.onChoose(settings.items[19], settings)
+eq(settings.items[21].right, "CHAOS", "chaos gift mode is displayed")
+settings.opts.onChoose(settings.items[21], settings)
 eq(h.save.gift_randomizer, "off", "gift randomizer can change to OFF")
-settings.opts.onChoose(settings.items[19], settings)
+settings.opts.onChoose(settings.items[21], settings)
 eq(h.save.gift_randomizer, "balanced",
   "gift randomizer cycles back to BALANCED")
-eq(settings.items[20].right, "EXCLUDE",
+eq(settings.items[22].right, "EXCLUDE",
   "legendary gifts default to excluded")
-settings.opts.onChoose(settings.items[20], settings)
+settings.opts.onChoose(settings.items[22], settings)
 eq(h.save.gift_legendaries, "allow",
   "legendary gifts can be allowed")
-eq(settings.items[20].right, "ALLOW",
+eq(settings.items[22].right, "ALLOW",
   "allowed legendary gifts are displayed")
-settings.opts.onChoose(settings.items[20], settings)
+settings.opts.onChoose(settings.items[22], settings)
 eq(h.save.gift_legendaries, "exclude",
   "gift legendary policy cycles to EXCLUDE")
-eq(settings.items[21].right, "BALANCED",
+eq(settings.items[23].right, "BALANCED",
   "active settings show balanced trainer randomization")
-settings.opts.onChoose(settings.items[21], settings)
+settings.opts.onChoose(settings.items[23], settings)
 eq(h.save.trainer_randomizer, "chaos",
   "trainer randomizer can change to CHAOS")
-eq(settings.items[21].right, "CHAOS", "chaos trainer mode is displayed")
-settings.opts.onChoose(settings.items[21], settings)
+eq(settings.items[23].right, "CHAOS", "chaos trainer mode is displayed")
+settings.opts.onChoose(settings.items[23], settings)
 eq(h.save.trainer_randomizer, "off", "trainer randomizer can change to OFF")
-settings.opts.onChoose(settings.items[21], settings)
+settings.opts.onChoose(settings.items[23], settings)
 eq(h.save.trainer_randomizer, "balanced",
   "trainer randomizer cycles back to BALANCED")
-eq(settings.items[22].right, "EXCLUDE",
+eq(settings.items[24].right, "EXCLUDE",
   "legendary trainer Pokemon default to excluded")
-settings.opts.onChoose(settings.items[22], settings)
+settings.opts.onChoose(settings.items[24], settings)
 eq(h.save.trainer_legendaries, "allow",
   "legendary trainer Pokemon can be allowed")
-eq(settings.items[22].right, "ALLOW",
+eq(settings.items[24].right, "ALLOW",
   "allowed trainer legendaries are displayed")
-settings.opts.onChoose(settings.items[22], settings)
+settings.opts.onChoose(settings.items[24], settings)
 eq(h.save.trainer_legendaries, "exclude",
   "trainer legendary policy cycles to EXCLUDE")
-eq(settings.items[23].right, "INCLUDE",
+eq(settings.items[25].right, "INCLUDE",
   "boss teams default to included")
-settings.opts.onChoose(settings.items[23], settings)
+settings.opts.onChoose(settings.items[25], settings)
 eq(h.save.trainer_bosses, "exclude", "boss teams can be excluded")
-eq(settings.items[23].right, "EXCLUDE",
+eq(settings.items[25].right, "EXCLUDE",
   "excluded boss teams are displayed")
-settings.opts.onChoose(settings.items[23], settings)
+settings.opts.onChoose(settings.items[25], settings)
 eq(h.save.trainer_bosses, "include",
   "boss policy cycles back to INCLUDE")
-settings.opts.onChoose(settings.items[24], settings)
+settings.opts.onChoose(settings.items[26], settings)
 eq(h.save.item_randomizer, "balanced", "found items can be randomized")
-eq(settings.items[24].right, "BALANCED", "balanced item mode is displayed")
-settings.opts.onChoose(settings.items[24], settings)
+eq(settings.items[26].right, "BALANCED", "balanced item mode is displayed")
+settings.opts.onChoose(settings.items[26], settings)
 eq(h.save.item_randomizer, "chaos", "item mode cycles to CHAOS")
-settings.opts.onChoose(settings.items[24], settings)
+settings.opts.onChoose(settings.items[26], settings)
 eq(h.save.item_randomizer, "off", "item mode cycles back to OFF")
-local visibleSeed = tonumber(settings.items[25].right)
+local visibleSeed = tonumber(settings.items[27].right)
 eq(type(visibleSeed), "number", "active settings show the randomizer seed")
-settings.opts.onChoose(settings.items[25], settings)
-eq(tonumber(settings.items[25].right), visibleSeed,
+settings.opts.onChoose(settings.items[27], settings)
+eq(tonumber(settings.items[27].right), visibleSeed,
   "the displayed seed is read-only")
 
 -- Knocking out the first eligible encounter burns the whole named area. Maps
