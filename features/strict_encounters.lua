@@ -154,7 +154,9 @@ function StrictEncounters.install(mod)
       refresh()
       return mod.ui.ListMenu.new(game, "NUZLOCKE SETTINGS", items, {
         wrap = true,
-        footer = locked and "LOCKED SEL:INFO" or "A:SET SEL:INFO B:BACK",
+        -- One line of eighteen columns: ListMenu wraps a longer footer onto a
+        -- second line that draws straight over the list rows.
+        footer = locked and "LOCKED SEL:INFO" or "A:SET SEL:INFO",
         onSelectKey = function(item)
           local help = item and HELP[item.value]
           if help then game.stack:push(TextBox.new(game, help)) end

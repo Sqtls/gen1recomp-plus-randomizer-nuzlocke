@@ -198,6 +198,8 @@ for _, item in ipairs(settings.items) do
 end
 eq(settings.opts.footer:match("SEL:INFO") ~= nil, true,
   "the footer advertises SELECT")
+-- A longer footer wraps onto a second line that draws over the list rows.
+eq(#settings.opts.footer <= 18, true, "the footer stays on one line")
 
 eq(settings.items[1].right, "ON", "active settings show strict encounters")
 settings.opts.onChoose(settings.items[1], settings)
