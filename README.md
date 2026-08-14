@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.27.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.27.1-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -96,7 +96,7 @@ opens by itself the first time the player spawns in their bedroom, and can be
 reopened later from:
 
 ```text
-START → NUZLOCKE
+START → RULESET
 ```
 
 ## Configuring a run
@@ -153,7 +153,7 @@ Pokémon normally.
 The mapping is deterministic for the run. The seed, map, encounter method,
 time of day, and table slot ensure that revisiting the same encounter table
 does not reroll it. The seed is generated when the save is created and remains
-visible from `START → NUZLOCKE`.
+visible from `START → RULESET`.
 
 The randomizer covers grass, caves, Surf, Sweet Scent, fishing, Headbutt trees,
 Rock Smash, and ordinary swarm tables. All Headbutt trees that use the same

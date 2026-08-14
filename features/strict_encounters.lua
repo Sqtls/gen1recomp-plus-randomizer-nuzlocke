@@ -343,7 +343,8 @@ function StrictEncounters.install(mod)
     local result = next(game, items)
     if type(result) ~= "table" then return result end
     return mod.ui.insertBefore(result, "SAVE", {
-      label = "NUZLOCKE",
+      -- Seven glyphs: an eighth runs past the START box border.
+      label = "RULESET",
       desc = { "Challenge", "settings" },
       onSelect = function(activeGame)
         mod.ui.push(activeGame or game, SETTINGS_SCREEN)

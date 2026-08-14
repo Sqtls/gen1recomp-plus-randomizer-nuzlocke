@@ -239,8 +239,8 @@ game.save.party = { { species = "CYNDAQUIL", level = 20, hp = 20 } }
 local menu = run.loader.hooks:call("ui.start_menu.items",
   function(_, items) return items end, game,
   { { label = "POK\195\169GEAR" }, { label = "SAVE" } })
-assert(#menu == 3 and menu[2].label == "NUZLOCKE",
-  "loaded mod must add START -> NUZLOCKE before SAVE")
+assert(#menu == 3 and menu[2].label == "RULESET",
+  "loaded mod must add START -> RULESET before SAVE")
 
 local free = { wild = true, enemy = { species = "SENTRET" } }
 run.loader.events:emit("battle.started", {

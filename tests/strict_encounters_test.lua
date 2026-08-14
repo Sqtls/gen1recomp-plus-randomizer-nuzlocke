@@ -173,7 +173,7 @@ local rows = startHook(function(_, items) return items end, game, {
   { label = "POKéMON", value = "pokemon" },
   { label = "SAVE", value = "save" },
 })
-eq(rows[2].label, "NUZLOCKE", "START menu exposes Nuzlocke settings")
+eq(rows[2].label, "RULESET", "START menu exposes Nuzlocke settings")
 rows[2].onSelect(game)
 eq(h:pushed().id, "Gen1RecompPlusNuzlockeSettings",
   "START row opens the settings screen")
