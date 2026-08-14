@@ -34,6 +34,12 @@ local function usable(def)
     and def.id ~= "NO_ITEM" and def.id ~= "PARK_BALL"
 end
 
+-- Poke Balls are progression here, not loot: Elm's aide handing over five of
+-- them (AideScript_GiveYouBalls) is the run's first guaranteed catching stock
+-- and the moment the ruleset locks, so no script that gives Poke Balls is ever
+-- randomized away.  They stay in the replacement pool.
+local PROTECTED = { POKE_BALL = true }
+
 local function isTm(def) return def.id:match("^TM_") ~= nil end
 local function isHm(def) return def.id:match("^HM_") ~= nil end
 
@@ -113,6 +119,7 @@ function ItemRandomizer.install(mod)
     end
     local built = poolsFor(data)
     local source = built.byIndex[index]
+    if source and PROTECTED[source.id] then return index end
     local category = source and categoryOf(source)
     if not category then return index end
     local pool = built[category]
