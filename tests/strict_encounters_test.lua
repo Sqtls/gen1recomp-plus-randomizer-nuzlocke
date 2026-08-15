@@ -211,7 +211,7 @@ end
 for index, item in ipairs(settings.items) do
   local expected = "NUZLOCKE SETTINGS"
   if item.value:match("randomizer") or item.value:match("legendaries")
-      or item.value == "trainer_bosses" then
+      or item.value == "trainer_bosses" or item.value == "randomize_ruins" then
     expected = "RANDOMIZER SETTINGS"
   end
   eq(titleAt(index), expected, "header for " .. item.label)

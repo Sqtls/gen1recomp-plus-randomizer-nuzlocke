@@ -139,10 +139,13 @@ function WildRandomizer.install(mod)
 
   local function choose(data, source, scope, slot)
     if not enabled() then return source end
-    -- Gold's Unown form gate assumes every Unown slot is in the Ruins. Keeping
-    -- those slots unchanged prevents randomized routes from silently yielding
-    -- no encounter before the first puzzle is solved.
-    if source == "UNOWN" then return source end
+    -- Unown only ever appears in the Ruins of Alph. Randomizing those slots is
+    -- on by default; turning RUINS off keeps them vanilla so Gold's letter-form
+    -- gate behaves exactly as it ships. The destination filter below still bars
+    -- Unown elsewhere, so no other route can become an empty pre-puzzle slot.
+    if source == "UNOWN" and not setting(mod, "randomize_ruins", true) then
+      return source
+    end
     local allowLegendaries = setting(mod, "wild_legendaries", "exclude")
       == "allow"
     return chooseSpecies(data, source,
