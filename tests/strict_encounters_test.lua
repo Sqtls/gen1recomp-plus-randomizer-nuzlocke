@@ -485,6 +485,7 @@ game.data = {
     ROUTE_37 = { landmark = 24 },
     ROUTE_38 = { landmark = 25 },
     ROUTE_39 = { landmark = 26 },
+    ROUTE_40 = { landmark = 27 },
   },
   pokemon = {
     SENTRET = { evolutions = { { species = "FURRET" } } },
@@ -494,6 +495,20 @@ game.data = {
     ABRA = { evolutions = { { species = "KADABRA" } } },
     KADABRA = { evolutions = { { species = "ALAKAZAM" } } },
     ALAKAZAM = { evolutions = {} },
+    -- Gold's extractor names an evolution target `into`, and TYROGUE branches
+    -- into three by stat comparison. Both details must feed family detection.
+    TYROGUE = {
+      evolutions = {
+        { method = "EVOLVE_STAT", into = "HITMONLEE" },
+        { method = "EVOLVE_STAT", into = "HITMONCHAN" },
+        { method = "EVOLVE_STAT", into = "HITMONTOP" },
+      },
+    },
+    HITMONLEE = { evolutions = {} },
+    HITMONCHAN = { evolutions = {} },
+    HITMONTOP = { evolutions = {} },
+    RATTATA = { evolutions = { { method = "EVOLVE_LEVEL", into = "RATICATE" } } },
+    RATICATE = { evolutions = {} },
   },
 }
 mod.game = game
@@ -1004,6 +1019,40 @@ eq(allowed, false, "permanent ownership blocks the released family")
 eq(denial:lower():find("duplicate", 1, true) ~= nil, true,
   "permanent family denial identifies a duplicate")
 h:emit("battle.ended", { battle = receivedFamilyDupe, result = "run" })
+
+-- Branched, `into`-named lines must resolve too: owning TYROGUE makes a wild
+-- HITMONTOP a SKIP duplicate, so running from it leaves the route open for the
+-- next, genuinely new species rather than locking it as a burned encounter.
+h:emit("pokemon.received", { mon = { species = "TYROGUE" }, from = "gift" })
+h:setMap("ROUTE_40")
+local branchedDupe = { wild = true, enemy = { species = "HITMONTOP" } }
+h:emit("battle.started", {
+  battle = branchedDupe, kind = "wild", species = "HITMONTOP",
+})
+eq(h.save.encounter_areas["LANDMARK:27"], nil,
+  "a branched evolution duplicate does not consume the route")
+allowed, denial = catchHook(function() return true end, {
+  game = game, battle = branchedDupe, species = "HITMONTOP",
+})
+eq(allowed, false, "the branched-family duplicate cannot be caught")
+h:emit("battle.ended", { battle = branchedDupe, result = "run" })
+eq(h.save.encounter_areas["LANDMARK:27"], nil,
+  "running from the branched duplicate leaves the route open")
+local freshAfterDupe = { wild = true, enemy = { species = "RATTATA" } }
+h:emit("battle.started", {
+  battle = freshAfterDupe, kind = "wild", species = "RATTATA",
+})
+eq(h.save.encounter_areas["LANDMARK:27"].status, "active",
+  "the next new species becomes the route's real encounter")
+allowed = catchHook(function() return true end, {
+  game = game, battle = freshAfterDupe, species = "RATTATA",
+})
+eq(allowed, true, "the new species can still be caught after a skipped dupe")
+h:emit("pokemon.caught", {
+  game = game, battle = freshAfterDupe, species = "RATTATA",
+})
+eq(h.save.encounter_areas["LANDMARK:27"].status, "caught",
+  "catching the new species consumes the route normally")
 
 -- Every way to leave an eligible encounter without catching it consumes the
 -- area. Gold reports an enemy escape as "fled" and a whiteout as "lose".

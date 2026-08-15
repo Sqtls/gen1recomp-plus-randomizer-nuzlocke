@@ -455,6 +455,14 @@ function StrictEncounters.install(mod)
       and originalShinies[battle] == true
   end
 
+  -- Gold's extractor stores an evolution's target species in `into` (see
+  -- core/gen2/Evolution.lua and Breeding.lua). Reading `species` here left
+  -- every family as just its own member, so branched lines like TYROGUE ->
+  -- HITMONTOP were never recognised as duplicates.
+  local function evolvesInto(evolution)
+    return evolution.into or evolution.species
+  end
+
   local function family(data, species)
     local members = {}
     local pending = { species }
@@ -464,11 +472,11 @@ function StrictEncounters.install(mod)
         members[id] = true
         local pokemon = data and data.pokemon or {}
         for _, evolution in ipairs((pokemon[id] or {}).evolutions or {}) do
-          pending[#pending + 1] = evolution.species
+          pending[#pending + 1] = evolvesInto(evolution)
         end
         for parent, definition in pairs(pokemon) do
           for _, evolution in ipairs(definition.evolutions or {}) do
-            if evolution.species == id then pending[#pending + 1] = parent end
+            if evolvesInto(evolution) == id then pending[#pending + 1] = parent end
           end
         end
       end
