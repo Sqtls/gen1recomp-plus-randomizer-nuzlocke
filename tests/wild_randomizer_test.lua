@@ -127,13 +127,21 @@ local scented = speciesHook("RATTATA", 4, {
 })
 eq(scented.species, result.species,
   "Sweet Scent uses the same randomized table as walking")
+saved.wild_randomizer = "chaos"
 local unown = speciesHook("UNOWN", 5, {
   kind = "wild", mapId = "RUINS_OF_ALPH", terrain = "cave",
   daytime = "day", data = data, slot = 1,
 })
-eq(unown.species, "UNOWN", "Unown slots preserve Gold's form gate")
+eq(unown.species ~= "UNOWN", true,
+  "RUINS on by default randomizes the Ruins of Alph Unown")
+saved.randomize_ruins = false
+local unownOff = speciesHook("UNOWN", 5, {
+  kind = "wild", mapId = "RUINS_OF_ALPH", terrain = "cave",
+  daytime = "day", data = data, slot = 1,
+})
+eq(unownOff.species, "UNOWN", "RUINS off keeps Gold's Unown form gate")
+saved.randomize_ruins = nil
 
-saved.wild_randomizer = "chaos"
 for slot = 1, 24 do
   local ordinary = randomizer.choose(data, "RATTATA", "ordinary", slot)
   eq(randomizer.legendary(ordinary), false,

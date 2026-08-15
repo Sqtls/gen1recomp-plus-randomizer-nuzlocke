@@ -72,6 +72,8 @@ local HELP = {
     .. "KEY ITEMS, HMS\nand BALL gifts\fnever change.",
   randomizer_seed = "The number every\nrandom choice is\fbuilt from.\f"
     .. "The same seed\nalways gives the\fsame run.",
+  randomize_ruins = "Wild UNOWN in the\nRUINS OF ALPH are\freplaced.\f"
+    .. "OFF keeps their\nletter forms.",
   done = "Closes this\nscreen.\fThe rules lock\nwhen you get\fyour first BALL.",
 }
 
@@ -84,6 +86,7 @@ local RANDOMIZER_ROWS = {
   gift_randomizer = true, gift_legendaries = true,
   trainer_randomizer = true, trainer_legendaries = true,
   trainer_bosses = true, item_randomizer = true, randomizer_seed = true,
+  randomize_ruins = true,
 }
 
 local function titleFor(item)
@@ -136,6 +139,7 @@ function StrictEncounters.install(mod)
         { label = "BOSSES", value = "trainer_bosses" },
         { label = "ITEMS", value = "item_randomizer" },
         { label = "SEED", value = "randomizer_seed" },
+        { label = "RUINS", value = "randomize_ruins" },
         { label = "DONE", value = "done" },
       }
       local function refresh()
@@ -178,6 +182,8 @@ function StrictEncounters.install(mod)
         items[26].right = setting(mod, "item_randomizer", "off"):upper()
         local randomizer = mod.exports.wildRandomizer
         items[27].right = tostring(randomizer and randomizer.seed() or "-")
+        items[28].right = setting(mod, "randomize_ruins", true)
+          and "ON" or "OFF"
       end
       refresh()
       local screen = mod.ui.ListMenu.new(game, titleFor(items[1]), items, {
@@ -298,6 +304,9 @@ function StrictEncounters.install(mod)
             mod.save:set("item_randomizer",
               ({ off = "balanced", balanced = "chaos", chaos = "off" })[current]
                 or "off")
+          elseif item.value == "randomize_ruins" then
+            mod.save:set("randomize_ruins",
+              not setting(mod, "randomize_ruins", true))
           end
           refresh()
         end,
