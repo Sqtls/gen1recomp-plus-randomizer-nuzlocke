@@ -930,8 +930,9 @@ h.save.encounter_areas["LANDMARK:23"] = nil
 h.save.static_encounters = "area"
 
 -- Dupes checks the complete evolution family and remembers catches even if
--- that Pokemon later leaves the party. SKIP preserves the route but forbids
--- catching the duplicate; LOSE burns it immediately.
+-- that Pokemon later leaves the party. SKIP offers the skip rather than
+-- imposing it: the route survives running away, but the duplicate may still be
+-- taken. LOSE burns the route immediately.
 h:setMap("ROUTE_31")
 local skippedDupe = { wild = true, enemy = { species = "FURRET" } }
 h:emit("battle.started", {
@@ -939,15 +940,28 @@ h:emit("battle.started", {
 })
 eq(h.save.encounter_areas["LANDMARK:18"], nil,
   "SKIP family duplicate does not consume the route")
-allowed, denial = catchHook(function() return true end, {
+allowed = catchHook(function() return true end, {
   game = game, battle = skippedDupe, species = "FURRET",
 })
-eq(allowed, false, "SKIP family duplicate cannot be caught")
-eq(denial:lower():find("duplicate", 1, true) ~= nil, true,
-  "SKIP duplicate denial explains why")
+eq(allowed, true, "SKIP family duplicate may still be caught by choice")
 h:emit("battle.ended", { battle = skippedDupe, result = "run" })
 eq(h.save.encounter_areas["LANDMARK:18"], nil,
   "leaving a skipped duplicate still preserves the route")
+
+-- Choosing to take the duplicate spends the area like any other catch.
+local takenDupe = { wild = true, enemy = { species = "FURRET" } }
+h:emit("battle.started", {
+  battle = takenDupe, kind = "wild", species = "FURRET",
+})
+h:emit("pokemon.caught", { game = game, battle = takenDupe, species = "FURRET" })
+eq(h.save.encounter_areas["LANDMARK:18"].status, "caught",
+  "taking a SKIP duplicate consumes the route")
+allowed = catchHook(function() return true end, {
+  game = game,
+  battle = { wild = true, enemy = { species = "SENTRET" } },
+})
+eq(allowed, false, "the route is closed after taking the duplicate")
+h.save.encounter_areas["LANDMARK:18"] = nil
 
 settings.opts.onChoose(settings.items[2], settings)
 eq(h.save.dupes_mode, "lose", "duplicate policy can be changed to LOSE")
@@ -1012,13 +1026,9 @@ h:emit("battle.started", {
 })
 eq(h.save.encounter_areas["LANDMARK:26"], nil,
   "a released bonus Pokemon still skips its evolution family")
-allowed, denial = catchHook(function() return true end, {
-  game = game, battle = receivedFamilyDupe, species = "KADABRA",
-})
-eq(allowed, false, "permanent ownership blocks the released family")
-eq(denial:lower():find("duplicate", 1, true) ~= nil, true,
-  "permanent family denial identifies a duplicate")
 h:emit("battle.ended", { battle = receivedFamilyDupe, result = "run" })
+eq(h.save.encounter_areas["LANDMARK:26"], nil,
+  "permanent ownership keeps the released family skippable")
 
 -- Branched, `into`-named lines must resolve too: owning TYROGUE makes a wild
 -- HITMONTOP a SKIP duplicate, so running from it leaves the route open for the
@@ -1031,10 +1041,6 @@ h:emit("battle.started", {
 })
 eq(h.save.encounter_areas["LANDMARK:27"], nil,
   "a branched evolution duplicate does not consume the route")
-allowed, denial = catchHook(function() return true end, {
-  game = game, battle = branchedDupe, species = "HITMONTOP",
-})
-eq(allowed, false, "the branched-family duplicate cannot be caught")
 h:emit("battle.ended", { battle = branchedDupe, result = "run" })
 eq(h.save.encounter_areas["LANDMARK:27"], nil,
   "running from the branched duplicate leaves the route open")

@@ -21,7 +21,7 @@ local HELP = {
   strict_encounters = "Only the first\nPOKEMON met in\fan area may be\n"
     .. "caught.\fOFF lifts the\nlimit entirely.",
   dupes_mode = "When the first\nmeeting is a\fspecies you have\nowned:\f"
-    .. "SKIP: meet again.\nLOSE: no catch.\fOFF: allow the\nduplicate.",
+    .. "SKIP: catch it or\nmeet again.\fLOSE: no catch.\nOFF: no clause.",
   shiny_clause = "Any shiny may be\ncaught, even in\fa used or\n"
     .. "duplicate area.",
   permadeath = "Fainted POKEMON\nare released for\fgood, and\n"
@@ -534,7 +534,7 @@ function StrictEncounters.install(mod)
     local staticPolicy = static
       and setting(mod, "static_encounters", "area") or nil
     battles[battle] = {
-      key = key, species = species,
+      key = key, species = species, mapId = mapId,
       staticArea = staticPolicy == "area",
       staticBonus = staticPolicy == "bonus",
       staticForbid = staticPolicy == "forbid",
@@ -593,6 +593,13 @@ function StrictEncounters.install(mod)
       current.species = ev.species or current.species
       current.result = nil
       writeArea(record.key, current)
+    elseif not current and record.duplicate == "skip" then
+      -- A skipped duplicate leaves the area open, but taking it anyway spends
+      -- that area's one encounter like any other catch.
+      writeArea(record.key, {
+        status = "caught", species = ev.species or record.species,
+        mapId = record.mapId,
+      })
     end
   end)
 
@@ -612,10 +619,10 @@ function StrictEncounters.install(mod)
     local species = state and state.species or current and current.species
       or battle and battle.enemy and battle.enemy.species
     local name = pokemonName(game, species)
-    if current and current.duplicate then
-      return current.duplicate == "lose"
-        and ("Duplicate %s.\nEncounter failed!"):format(name)
-        or ("Duplicate %s.\nCatch refused!"):format(name)
+    -- SKIP only offers the skip: the clause is the player's to invoke, so the
+    -- duplicate may still be caught and spend the area. Only LOSE refuses.
+    if current and current.duplicate == "lose" then
+      return ("Duplicate %s.\nEncounter failed!"):format(name)
     end
     if state and (state.status == "caught" or state.status == "failed"
         or (state.status == "active" and not current)) then
