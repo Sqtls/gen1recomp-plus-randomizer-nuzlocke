@@ -5,7 +5,7 @@
 ### A configurable, strictly enforced Pokémon Gold Nuzlocke for gen1recomp++
 
 ![Pokémon Gold](https://img.shields.io/badge/game-Pok%C3%A9mon%20Gold-d4af37?style=flat-square)
-![Version](https://img.shields.io/badge/version-0.28.0-4c8bf5?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.28.1-4c8bf5?style=flat-square)
 ![Mod API](https://img.shields.io/badge/mod%20API-2-6f42c1?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
@@ -345,7 +345,7 @@ for example, also treats Pidgeotto and Pidgeot as duplicates.
 
 | Policy | Result when the encounter is a duplicate |
 | --- | --- |
-| `SKIP` | The encounter is ignored and the area remains available for a new species. |
+| `SKIP` | The encounter may be skipped, leaving the area available for a new species. Catching the duplicate anyway is allowed and spends the area. |
 | `LOSE` | The encounter immediately fails the area. |
 | `OFF` | The duplicate becomes the area's normal encounter. |
 
@@ -561,7 +561,7 @@ item or the player's turn.
 | Pokémon Silver / Crystal | Not currently supported |
 | Pokémon Red / Blue / Yellow | Not supported |
 | gen1recomp++ Mod API | API 2 |
-| Current mod version | 0.28.0 |
+| Current mod version | 0.28.1 |
 
 Gold v0.1.80 predates several public enforcement hooks used by this project.
 The mod therefore declares the `engine_internals` permission and directly
