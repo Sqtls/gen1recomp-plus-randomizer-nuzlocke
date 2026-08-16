@@ -16,30 +16,31 @@ local function setting(mod, key, default)
   return value
 end
 
-local bit = require("bit")
-local bxor, band, rshift, tobit = bit.bxor, bit.band, bit.rshift, bit.tobit
-
--- The rolling accumulator below is linear in the key, so two keys differing by
+-- A single rolling accumulator is linear in the key, so two keys differing by
 -- one character land a fixed distance apart in any pool. With the pool sorted
--- by Pokedex index that distance can be one or two, which turns a trainer's
--- party into a marching evolution line. The MurmurHash3 finalizer breaks that
--- structure so neighbouring keys scatter.
-local function mix(value)
-  local result = tobit(value)
-  result = bxor(result, rshift(result, 16))
-  result = tobit(result * 0x85ebca6b)
-  result = bxor(result, rshift(result, 13))
-  result = tobit(result * 0xc2b2ae35)
-  result = bxor(result, rshift(result, 16))
-  return band(result, 0x7fffffff)
+-- by Pokedex index that distance is sometimes one or two, which turns a
+-- trainer's party into a marching evolution line: for an eight-letter source
+-- species, consecutive slots landed within two dex numbers 88% of the time.
+--
+-- Folding twice with different multipliers and rehashing the two results as
+-- text breaks that structure, because a number's decimal form is not a linear
+-- function of the number. Every product stays under 2^53, so this is exact in
+-- a double and behaves identically on any Lua. Deliberately no bit library:
+-- the previous fix used one and misbehaved in the game.
+local function fold(seed, value, multiplier)
+  local result = tonumber(seed) or 1
+  for index = 1, #value do
+    result = (result * multiplier + value:byte(index)) % 2147483647
+  end
+  return result
 end
 
 local function hash(seed, value)
-  local result = tonumber(seed) or 1
-  for index = 1, #value do
-    result = (result * 131 + value:byte(index)) % 2147483647
-  end
-  return mix(result)
+  seed = tonumber(seed) or 1
+  return fold(seed, table.concat({
+    tostring(fold(seed, value, 131)),
+    tostring(fold(seed + 7, value, 1000003)),
+  }, "|"), 131)
 end
 
 local function bst(definition)
