@@ -16,12 +16,30 @@ local function setting(mod, key, default)
   return value
 end
 
+local bit = require("bit")
+local bxor, band, rshift, tobit = bit.bxor, bit.band, bit.rshift, bit.tobit
+
+-- The rolling accumulator below is linear in the key, so two keys differing by
+-- one character land a fixed distance apart in any pool. With the pool sorted
+-- by Pokedex index that distance can be one or two, which turns a trainer's
+-- party into a marching evolution line. The MurmurHash3 finalizer breaks that
+-- structure so neighbouring keys scatter.
+local function mix(value)
+  local result = tobit(value)
+  result = bxor(result, rshift(result, 16))
+  result = tobit(result * 0x85ebca6b)
+  result = bxor(result, rshift(result, 13))
+  result = tobit(result * 0xc2b2ae35)
+  result = bxor(result, rshift(result, 16))
+  return band(result, 0x7fffffff)
+end
+
 local function hash(seed, value)
   local result = tonumber(seed) or 1
   for index = 1, #value do
     result = (result * 131 + value:byte(index)) % 2147483647
   end
-  return result
+  return mix(result)
 end
 
 local function bst(definition)
@@ -94,8 +112,12 @@ function WildRandomizer.install(mod)
     end
     local pool = speciesPool(data, allowed)
     if #pool == 0 then return source end
+    local key = table.concat({ scope, tostring(slot or 1), source }, "|")
     if mode == "chaos" then
-      local index = (hash(seed(), scope) + (slot or 1) - 1) % #pool + 1
+      -- The slot belongs in the hashed key, not added to its result: adding it
+      -- walked consecutive pool entries, and the pool is in Pokedex order, so
+      -- slot 1/2/3 of one scope came out as one evolution line.
+      local index = hash(seed(), key) % #pool + 1
       if pool[index] == source and #pool > 1 then index = index % #pool + 1 end
       return pool[index] or source
     end
@@ -132,7 +154,6 @@ function WildRandomizer.install(mod)
       end
       if #matched > 0 then pool = matched end
     end
-    local key = table.concat({ scope, tostring(slot or 1), source }, "|")
     local index = hash(seed(), key) % #pool + 1
     return pool[index] or source
   end
