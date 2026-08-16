@@ -210,30 +210,44 @@ for index = 1, 251 do
     index = index, baseStats = stats(50), evolutions = {},
   }
 end
+-- The source species is part of the hashed key, and its length decides how far
+-- apart two neighbouring slots land, so the sweep has to cover several name
+-- lengths. Eight-letter names were the worst case: they scored 88% before the
+-- second fold went in.
 saved.randomizer_seed = 739391
-local neighbours, samples, buckets = 0, 0, {}
-for map = 1, 200 do
-  local scope = "MAP_" .. map .. ":grass:day"
-  local previous
-  for slot = 1, 6 do
-    local picked = randomizer.chooseSpecies(wide, "MON_1", "chaos", scope, slot)
-    local index = wide.pokemon[picked].index
-    buckets[index] = (buckets[index] or 0) + 1
-    if previous then
-      samples = samples + 1
-      if math.abs(index - previous) <= 2 then neighbours = neighbours + 1 end
+local buckets, total = {}, 0
+for _, sourceName in ipairs({ "MON_1", "MON_40", "MON_150", "MON_249" }) do
+  local neighbours, samples = 0, 0
+  for map = 1, 200 do
+    local scope = "MAP_" .. map .. ":grass:day"
+    local previous
+    for slot = 1, 6 do
+      local picked = randomizer.chooseSpecies(wide, sourceName, "chaos", scope,
+        slot)
+      local index = wide.pokemon[picked].index
+      buckets[index] = (buckets[index] or 0) + 1
+      total = total + 1
+      if previous then
+        samples = samples + 1
+        if math.abs(index - previous) <= 2 then neighbours = neighbours + 1 end
+      end
+      previous = index
     end
-    previous = index
   end
+  -- Chance over a 251-entry pool is about 2%. Adding the slot scored 100%, and
+  -- hashing it without the second fold scored 88% at some name lengths.
+  eq(neighbours / samples < 0.10, true,
+    "CHAOS slots scatter for source name " .. sourceName)
 end
--- The old code scored 100% here; chance over a 251-entry pool is about 2%.
-eq(neighbours / samples < 0.10, true,
-  "CHAOS slots no longer march through one evolution line")
-local occupied = 0
+local occupied, busiest = 0, 0
 for _, count in pairs(buckets) do
   if count > 0 then occupied = occupied + 1 end
+  if count > busiest then busiest = count end
 end
 eq(occupied > 200, true, "CHAOS spreads across the whole species pool")
+-- v0.28.2 collapsed onto pool[1] in game and handed out nothing but Bulbasaur.
+eq(busiest < (total / 251) * 4, true,
+  "no single species swallows the pool")
 local repeatable = randomizer.chooseSpecies(wide, "MON_1", "chaos",
   "MAP_1:grass:day", 1)
 eq(repeatable, randomizer.chooseSpecies(wide, "MON_1", "chaos",
